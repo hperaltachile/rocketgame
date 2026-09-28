@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { GameSlug } from "@/lib/games/registry";
 
@@ -19,7 +20,11 @@ export function GameLoading() {
  *   "2048": dynamic(() => import("@/games/2048/Game2048"), { loading: GameLoading }),
  * Phaser games also pass `ssr: false`.
  */
-const GAME_COMPONENTS: Partial<Record<GameSlug, ComponentType>> = {};
+const GAME_COMPONENTS: Partial<Record<GameSlug, ComponentType>> = {
+  "2048": dynamic(() => import("@/games/2048/Game2048"), {
+    loading: GameLoading,
+  }),
+};
 
 export default function GameLoader({ slug }: { slug: GameSlug }) {
   const Game = GAME_COMPONENTS[slug];

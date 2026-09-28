@@ -84,7 +84,7 @@ export const GAMES: readonly GameInfo[] = [
     icon: "🔢",
     engine: "react",
     best: { label: "Best", direction: "high" },
-    available: false,
+    available: true,
   },
 ];
 
