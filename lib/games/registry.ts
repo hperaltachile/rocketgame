@@ -40,7 +40,7 @@ export const GAMES: readonly GameInfo[] = [
     icon: "🐍",
     engine: "phaser",
     best: { label: "Best", direction: "high" },
-    available: false,
+    available: true,
   },
   {
     slug: "minesweeper",

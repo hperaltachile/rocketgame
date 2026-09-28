@@ -19,7 +19,7 @@ export default function Stage({
 }) {
   return (
     <div
-      className="relative w-full touch-none overflow-hidden rounded-2xl bg-[#0b1026] select-none"
+      className="relative w-full touch-none overflow-hidden rounded-2xl bg-[#0b1026] ring-2 ring-line select-none"
       style={{ aspectRatio: aspect }}
     >
       {loaded ? (
