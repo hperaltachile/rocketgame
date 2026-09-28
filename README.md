@@ -1,6 +1,6 @@
 # RocketGame
 
-Quick, free browser mini-games with a rockets-and-space theme — [rocketgame.me](https://rocketgame.me).
+Quick, free browser mini-games with a rockets-and-space theme — [rocketgame.app](https://rocketgame.app).
 
 Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action games) and plain React (puzzle games).
 

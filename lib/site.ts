@@ -1,4 +1,4 @@
-export const SITE_URL = "https://rocketgame.me";
+export const SITE_URL = "https://rocketgame.app";
 export const SITE_NAME = "RocketGame";
 export const SITE_DESCRIPTION =
   "Quick, free browser games with a rockets-and-space theme. No sign-up, no downloads — pick a game and play right away.";
