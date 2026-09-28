@@ -21,6 +21,10 @@ export function GameLoading() {
  * Phaser games also pass `ssr: false`.
  */
 const GAME_COMPONENTS: Partial<Record<GameSlug, ComponentType>> = {
+  "rocket-run": dynamic(() => import("@/games/rocket-run/RocketRun"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
   "2048": dynamic(() => import("@/games/2048/Game2048"), {
     loading: GameLoading,
   }),
