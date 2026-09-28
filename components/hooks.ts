@@ -12,7 +12,7 @@ import {
 } from "@/lib/storage";
 
 /** Raw localStorage value, kept in sync across components and tabs. `null` during SSR. */
-function useStoredRaw(key: string): string | null {
+export function useStoredRaw(key: string): string | null {
   return useSyncExternalStore(
     subscribe,
     () => readRaw(key),
