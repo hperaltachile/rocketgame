@@ -133,6 +133,33 @@ body {
   animation: float 4s ease-in-out infinite;
 }
 
+/* 2048 tiles: appear/pop after the 100ms slide finishes. */
+@keyframes tile-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+@keyframes tile-merge {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+.animate-tile-appear {
+  animation: tile-appear 150ms ease-out 100ms backwards;
+}
+
+.animate-tile-merge {
+  animation: tile-merge 180ms ease-out 100ms backwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

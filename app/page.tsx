@@ -20,8 +20,8 @@ export default function Home() {
             game and play right away, on your phone or keyboard.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/games/rocket-run" className="btn-primary">
-              <span aria-hidden="true">🚀</span> Play Rocket Run
+            <Link href="/games/2048" className="btn-primary">
+              <span aria-hidden="true">🔢</span> Play 2048
             </Link>
             <Link href="#games" className="btn-secondary">
               Browse all games
