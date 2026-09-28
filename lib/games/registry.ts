@@ -51,7 +51,7 @@ export const GAMES: readonly GameInfo[] = [
     icon: "💣",
     engine: "react",
     best: { label: "Best time", direction: "low", unit: "s" },
-    available: false,
+    available: true,
   },
   {
     slug: "tictactoe",
@@ -62,7 +62,7 @@ export const GAMES: readonly GameInfo[] = [
     icon: "⭕",
     engine: "react",
     best: { label: "Wins", direction: "high" },
-    available: false,
+    available: true,
   },
   {
     slug: "memory",
@@ -73,7 +73,7 @@ export const GAMES: readonly GameInfo[] = [
     icon: "🪐",
     engine: "react",
     best: { label: "Fewest moves", direction: "low", unit: " moves" },
-    available: false,
+    available: true,
   },
   {
     slug: "2048",

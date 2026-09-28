@@ -160,6 +160,31 @@ body {
   animation: tile-merge 180ms ease-out 100ms backwards;
 }
 
+/* Memory Match card flip. */
+.flip-card {
+  perspective: 800px;
+}
+
+.flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 350ms ease;
+}
+
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

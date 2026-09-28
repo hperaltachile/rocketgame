@@ -16,17 +16,25 @@ export function GameLoading() {
 }
 
 /**
- * One entry per built game, each a separate chunk loaded only on its page:
- *   "2048": dynamic(() => import("@/games/2048/Game2048"), { loading: GameLoading }),
- * Phaser games also pass `ssr: false`.
+ * One entry per game, each a separate chunk loaded only on its own page.
+ * Phaser games use `ssr: false` so Phaser never runs on the server.
  */
-const GAME_COMPONENTS: Partial<Record<GameSlug, ComponentType>> = {
+const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
+  "rocket-run": dynamic(() => import("@/games/rocket-run/RocketRun"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
   snake: dynamic(() => import("@/games/snake/SnakeGame"), {
     ssr: false,
     loading: GameLoading,
   }),
-  "rocket-run": dynamic(() => import("@/games/rocket-run/RocketRun"), {
-    ssr: false,
+  minesweeper: dynamic(() => import("@/games/minesweeper/Minesweeper"), {
+    loading: GameLoading,
+  }),
+  tictactoe: dynamic(() => import("@/games/tictactoe/TicTacToe"), {
+    loading: GameLoading,
+  }),
+  memory: dynamic(() => import("@/games/memory/MemoryMatch"), {
     loading: GameLoading,
   }),
   "2048": dynamic(() => import("@/games/2048/Game2048"), {
@@ -36,5 +44,5 @@ const GAME_COMPONENTS: Partial<Record<GameSlug, ComponentType>> = {
 
 export default function GameLoader({ slug }: { slug: GameSlug }) {
   const Game = GAME_COMPONENTS[slug];
-  return Game ? <Game /> : <GameLoading />;
+  return <Game />;
 }

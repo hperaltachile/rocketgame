@@ -30,6 +30,8 @@ type Props = {
   howToPlay: ReactNode;
   /** Show the sound toggle (only for games with audio). */
   hasSound?: boolean;
+  /** Hide the best-score box (for games that show their own record in `stats`). */
+  hideBest?: boolean;
   children: ReactNode;
 };
 
@@ -67,6 +69,7 @@ export default function GameShell({
   controls,
   howToPlay,
   hasSound = false,
+  hideBest = false,
   children,
 }: Props) {
   const best = useBest(game.slug);
@@ -159,10 +162,12 @@ export default function GameShell({
         {stats.map((stat) => (
           <StatBox key={stat.label} label={stat.label} value={stat.value} />
         ))}
-        <StatBox
-          label={game.best.label}
-          value={best === null ? "—" : formatBest(game, best)}
-        />
+        {!hideBest && (
+          <StatBox
+            label={game.best.label}
+            value={best === null ? "—" : formatBest(game, best)}
+          />
+        )}
       </dl>
 
       {controls && <div className="mb-3">{controls}</div>}
