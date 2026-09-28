@@ -21,8 +21,8 @@ export default function Home() {
             your work!
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/games/2048" className="btn-primary">
-              <span aria-hidden="true">🔢</span> Play 2048
+            <Link href="/games/rocket-run" className="btn-primary">
+              <span aria-hidden="true">🚀</span> Play Rocket Run
             </Link>
             <Link href="#games" className="btn-secondary">
               Browse all games
