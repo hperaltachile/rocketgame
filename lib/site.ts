@@ -1,7 +1,7 @@
 export const SITE_URL = "https://rocketgame.app";
 export const SITE_NAME = "RocketGame";
 export const SITE_DESCRIPTION =
-  "Quick, free browser games with a rockets-and-space theme. No sign-up, no downloads — pick a game and play right away.";
+  "Free, safe and kid-friendly browser games, inspired by the fun little games from Google. No downloads, no sign-up — play right in Chrome at school or at home.";
 
 /** Page-level openGraph replaces the layout's, so always send the full set. */
 export function openGraph(title: string, description: string, path: string) {
