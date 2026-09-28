@@ -3,7 +3,7 @@ import Link from "next/link";
 import { openGraph } from "@/lib/site";
 
 const description =
-  "About RocketGame: free, quick browser games with original art. Credits for fonts, sounds and other assets.";
+  "RocketGame is inspired by the fun little games from Google. Every game is free, safe and kid-friendly, and runs right in your Chrome browser.";
 
 export const metadata: Metadata = {
   title: "About",
@@ -15,22 +15,47 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <article className="mx-auto max-w-2xl space-y-6">
-      <h1 className="font-display text-4xl font-semibold">About RocketGame</h1>
-      <p className="text-lg text-muted">
-        RocketGame is a small collection of quick, free browser games. Open the
-        site, pick a game and play — no sign-up, no downloads and no ads in the
-        way. Every game works with a keyboard and on touch screens.
-      </p>
-
-      <section aria-labelledby="privacy" className="space-y-2">
-        <h2 id="privacy" className="font-display text-2xl font-semibold">
-          Your data
-        </h2>
-        <p className="text-muted">
-          Best scores and settings (such as sound on/off) are saved only in your
-          own browser. We use privacy-friendly Vercel Analytics to count page
-          views; it does not use cookies.
+      <h1 className="font-display text-4xl font-semibold">
+        Welcome to RocketGame! <span aria-hidden="true">🚀</span>
+      </h1>
+      <div className="space-y-4 text-lg text-muted">
+        <p>
+          RocketGame is inspired by the fun little games from Google, like the
+          Chrome Dino game and Google Doodle games. We kept things simple, clean
+          and easy to use, so kids everywhere can find a game fast and start
+          playing.
         </p>
+        <p>
+          Every game here is free, safe and kid-friendly. There&apos;s nothing
+          to download and no sign-up. The games run right in your Google Chrome
+          browser, so you can play at school during recess, at lunch, or after
+          you finish your work.
+        </p>
+        <p className="font-semibold text-text">
+          Ready for liftoff? Pick a game and blast off!
+        </p>
+      </div>
+
+      <Link href="/#games" className="btn-primary">
+        Play a game
+      </Link>
+
+      <section aria-labelledby="safe" className="space-y-2">
+        <h2 id="safe" className="font-display text-2xl font-semibold">
+          Safe to play
+        </h2>
+        <ul className="list-disc space-y-1 pl-5 text-muted">
+          <li>No ads.</li>
+          <li>No accounts, and no chat with strangers.</li>
+          <li>
+            Your best scores and settings stay on your own device. We never ask
+            for your name or email.
+          </li>
+          <li>
+            We only count visits to the site, with no cookies and nothing that
+            tells us who you are.
+          </li>
+        </ul>
       </section>
 
       <section aria-labelledby="credits" className="space-y-2">
@@ -38,8 +63,8 @@ export default function AboutPage() {
           Credits
         </h2>
         <p className="text-muted">
-          All games are original implementations, and the RocketGame rocket is
-          original art. Third-party assets:
+          All games are original, and the RocketGame rocket is original art.
+          Other things we use:
         </p>
         <ul className="list-disc space-y-1 pl-5 text-muted">
           <li>
@@ -62,9 +87,10 @@ export default function AboutPage() {
         </ul>
       </section>
 
-      <Link href="/#games" className="btn-primary">
-        Play a game
-      </Link>
+      <p className="border-t border-line pt-4 text-sm text-muted">
+        RocketGame is an independent site. It is not made by or connected to
+        Google. Google, Chrome and Google Doodle are trademarks of Google LLC.
+      </p>
     </article>
   );
 }

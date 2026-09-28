@@ -16,8 +16,9 @@ export default function Home() {
             <span className="text-accent">launched in a second.</span>
           </h1>
           <p className="mt-4 max-w-prose text-lg text-muted">
-            Free space-themed browser games. No sign-up, no downloads — pick a
-            game and play right away, on your phone or keyboard.
+            Free, safe games for kids — inspired by the fun little games from
+            Google. Play right in your Chrome browser at recess, lunch, or after
+            your work!
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/games/2048" className="btn-primary">
@@ -27,6 +28,12 @@ export default function Home() {
               Browse all games
             </Link>
           </div>
+          <Link
+            href="/about"
+            className="mt-4 inline-block rounded text-sm text-muted underline-offset-4 hover:text-text hover:underline"
+          >
+            About RocketGame →
+          </Link>
         </div>
         <div className="relative mx-auto flex aspect-square w-full max-w-72 items-center justify-center rounded-full bg-surface-2">
           <RocketLogo className="animate-float size-3/5" />
