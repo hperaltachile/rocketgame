@@ -24,6 +24,10 @@ const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: GameLoading,
   }),
+  "comet-kick": dynamic(() => import("@/games/comet-kick/CometKick"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
   snake: dynamic(() => import("@/games/snake/SnakeGame"), {
     ssr: false,
     loading: GameLoading,

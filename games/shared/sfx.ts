@@ -38,10 +38,16 @@ function tone(
   osc.stop(now + duration);
 }
 
-function noise(duration: number, cutoff: number, volume = 0.3) {
+function noise(
+  duration: number,
+  cutoff: number,
+  volume = 0.3,
+  type: BiquadFilterType = "lowpass",
+  delay = 0,
+) {
   const ctx = audio();
   if (!ctx) return;
-  const now = ctx.currentTime;
+  const now = ctx.currentTime + delay;
   const buffer = ctx.createBuffer(
     1,
     Math.ceil(ctx.sampleRate * duration),
@@ -52,9 +58,11 @@ function noise(duration: number, cutoff: number, volume = 0.3) {
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
+  filter.type = type;
   filter.frequency.setValueAtTime(cutoff, now);
-  filter.frequency.exponentialRampToValueAtTime(80, now + duration);
+  if (type === "lowpass") {
+    filter.frequency.exponentialRampToValueAtTime(80, now + duration);
+  }
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(volume, now);
   gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
@@ -73,4 +81,26 @@ export const sfx = {
   },
   eat: () => tone(660, 1320, 0.12, "square", 0.07),
   start: () => tone(440, 880, 0.18, "triangle", 0.1),
+  /** Foot meets ball: a soft thump. */
+  kick: () => {
+    tone(150, 50, 0.16, "sine", 0.35);
+    noise(0.06, 1200, 0.15);
+  },
+  /** Bat meets ball: a sharp crack. */
+  crack: () => {
+    noise(0.07, 2500, 0.45, "highpass");
+    tone(1400, 700, 0.08, "square", 0.08);
+  },
+  whoosh: () => noise(0.25, 900, 0.12, "bandpass"),
+  /** A crowd cheering: a few overlapping bursts of filtered noise. */
+  cheer: () => {
+    for (let i = 0; i < 4; i++)
+      noise(1.1, 1400 + i * 300, 0.07, "bandpass", i * 0.12);
+    tone(523, 1046, 0.25, "triangle", 0.06);
+  },
+  /** A friendly "awww" for a miss. */
+  aww: () => {
+    tone(420, 240, 0.6, "triangle", 0.09);
+    noise(0.6, 700, 0.05, "bandpass");
+  },
 };

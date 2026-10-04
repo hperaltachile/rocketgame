@@ -1,5 +1,11 @@
 export type GameSlug =
-  "rocket-run" | "snake" | "minesweeper" | "tictactoe" | "memory" | "2048";
+  | "rocket-run"
+  | "comet-kick"
+  | "snake"
+  | "minesweeper"
+  | "tictactoe"
+  | "memory"
+  | "2048";
 
 export type GameInfo = {
   slug: GameSlug;
@@ -29,6 +35,17 @@ export const GAMES: readonly GameInfo[] = [
     icon: "🚀",
     engine: "phaser",
     best: { label: "Best", direction: "high" },
+    available: true,
+  },
+  {
+    slug: "comet-kick",
+    name: "Comet Kick",
+    tagline: "Score penalty kicks past Bolt the robot goalie.",
+    description:
+      "Take 5 penalty kicks at Crater Field. Aim, stop the power bar, and beat Bolt the robot goalie — how many goals can you score?",
+    icon: "⚽",
+    engine: "phaser",
+    best: { label: "Best", direction: "high", unit: "/5" },
     available: true,
   },
   {

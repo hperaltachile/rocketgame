@@ -13,11 +13,13 @@ import { sfx } from "./sfx";
  * the React <-> scene bridge, and whether Phaser should be loaded yet (only
  * after the first Start, so the page itself stays light).
  */
-export function usePhaserShell<Extra extends { type: string } = never>(
-  slug: GameSlug,
-) {
+export function usePhaserShell<
+  Extra extends { type: string } = never,
+  State = never,
+>(slug: GameSlug) {
   const info = getGame(slug)!;
-  const [bridge] = useState(() => new GameBridge<BaseCommand | Extra>());
+  const [bridge] = useState(() => new GameBridge<BaseCommand | Extra, State>());
+  const [state, setState] = useState<State | null>(null);
   const [status, setStatus] = useState<GameStatus>("ready");
   const [score, setScore] = useState(0);
   const [bestAtStart, setBestAtStart] = useState<number | null>(null);
@@ -37,6 +39,7 @@ export function usePhaserShell<Extra extends { type: string } = never>(
         recordBest(info.slug, final, info.best.direction);
         setStatus("over");
       },
+      onState: setState,
     });
   }, [bridge, info]);
 
@@ -57,6 +60,7 @@ export function usePhaserShell<Extra extends { type: string } = never>(
   return {
     info,
     bridge,
+    state,
     status,
     loaded,
     shellProps: {
