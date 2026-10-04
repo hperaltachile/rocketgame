@@ -96,6 +96,9 @@ export default function Minesweeper() {
   };
 
   const minesLeft = MINES - flagsPlaced(board);
+  const touch = {
+    actions: [{ id: "flag", label: "Flag", icon: "🚩", active: flagMode }],
+  };
   const won = board.state === "won";
   const isNewBest = won && (bestAtStart === null || seconds < bestAtStart);
 
@@ -120,6 +123,10 @@ export default function Minesweeper() {
         )
       }
       isNewBest={isNewBest}
+      touch={touch}
+      onAction={(id, pressed) => {
+        if (id === "flag" && pressed) setFlagMode((on) => !on);
+      }}
       controls={
         <button
           type="button"
@@ -160,8 +167,11 @@ export default function Minesweeper() {
       <div
         role="grid"
         aria-label="Minefield, 9 by 9"
-        className="mx-auto grid w-full max-w-md gap-1 rounded-2xl bg-line p-2"
-        style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
+        className="grid size-full gap-[1cqw] rounded-2xl bg-line p-[2cqw]"
+        style={{
+          gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,
+        }}
         onContextMenu={(e) => e.preventDefault()}
       >
         {Array.from({ length: ROWS }, (_, r) => (
@@ -171,7 +181,7 @@ export default function Minesweeper() {
               const cell = board.cells[index];
               const focus = cellProps(index);
               return (
-                <div role="gridcell" key={c} className="aspect-square">
+                <div role="gridcell" key={c}>
                   <button
                     type="button"
                     {...focus}
@@ -221,7 +231,7 @@ function cellLabel(cell: Cell, r: number, c: number): string {
 
 function cellClass(cell: Cell, exploded: boolean): string {
   const base =
-    "font-display flex size-full items-center justify-center rounded-md text-lg font-semibold sm:text-2xl";
+    "font-display flex size-full items-center justify-center rounded-md text-[5.5cqw] font-semibold";
   if (exploded) return `${base} bg-red-500 text-white`;
   if (cell.revealed && !cell.flagged) {
     return `${base} bg-surface ${NUMBER_COLORS[cell.adjacent] ?? ""}`;

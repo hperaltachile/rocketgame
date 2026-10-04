@@ -108,7 +108,7 @@ export default function MemoryMatch() {
       <div
         role="grid"
         aria-label="Memory cards, 4 by 4"
-        className="mx-auto grid w-full max-w-md grid-cols-4 gap-2 sm:gap-3"
+        className="grid size-full grid-cols-4 grid-rows-4 gap-[2.5cqw]"
       >
         {[0, 1, 2, 3].map((r) => (
           <div role="row" key={r} className="contents">
@@ -118,11 +118,7 @@ export default function MemoryMatch() {
               const up = !!card && (card.faceUp || card.matched);
               const symbol = card ? SYMBOLS[card.symbol] : null;
               return (
-                <div
-                  role="gridcell"
-                  key={c}
-                  className="flip-card aspect-square"
-                >
+                <div role="gridcell" key={c} className="flip-card">
                   <button
                     type="button"
                     {...cellProps(index)}
@@ -136,7 +132,7 @@ export default function MemoryMatch() {
                   >
                     <span
                       aria-hidden="true"
-                      className="flip-face flex items-center justify-center rounded-xl border-2 border-line bg-surface-2 text-2xl"
+                      className="flip-face flex items-center justify-center rounded-xl border-2 border-line bg-surface-2 text-[7cqw]"
                       style={{
                         backgroundImage:
                           "radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.25) 0 2px, transparent 3px), radial-gradient(circle at 70% 65%, rgb(255 255 255 / 0.2) 0 1.5px, transparent 2.5px)",
@@ -146,7 +142,7 @@ export default function MemoryMatch() {
                     </span>
                     <span
                       aria-hidden="true"
-                      className={`flip-face flip-back flex items-center justify-center rounded-xl border-2 text-4xl sm:text-5xl ${
+                      className={`flip-face flip-back flex items-center justify-center rounded-xl border-2 text-[12cqw] ${
                         card?.matched
                           ? "border-accent bg-surface"
                           : "border-line bg-surface"

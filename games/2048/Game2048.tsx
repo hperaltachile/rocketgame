@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import GameShell, { type GameStatus } from "@/components/GameShell";
+import { DPad } from "@/components/TouchControls";
 import { getGame } from "@/lib/games/registry";
 import {
   move,
@@ -11,6 +12,7 @@ import {
   type Game,
   type Tile,
 } from "@/lib/games/2048/logic";
+import { KEY_DIRECTIONS } from "@/lib/input";
 import { readBest, recordBest } from "@/lib/storage";
 
 const INFO = getGame("2048")!;
@@ -20,21 +22,6 @@ const GAP = 2.5;
 const TILE = (100 - 5 * GAP) / 4;
 /** One cell step as a % of the tile's own size (what translate() % uses). */
 const STEP = ((TILE + GAP) / TILE) * 100;
-
-const KEY_DIRECTIONS: Record<string, Direction> = {
-  ArrowUp: "up",
-  ArrowDown: "down",
-  ArrowLeft: "left",
-  ArrowRight: "right",
-  w: "up",
-  s: "down",
-  a: "left",
-  d: "right",
-  W: "up",
-  S: "down",
-  A: "left",
-  D: "right",
-};
 
 const SWIPE_MIN_PX = 24;
 
@@ -53,13 +40,16 @@ const TILE_COLORS: Record<number, [bg: string, fg: string]> = {
 };
 const SUPER_TILE: [string, string] = ["#4cc9f0", "#0b1026"];
 
+/** Tile text in % of the board width (cqw), so it scales with the board. */
 function fontSize(value: number): string {
   const digits = String(value).length;
-  if (digits <= 2) return "text-3xl sm:text-5xl";
-  if (digits === 3) return "text-2xl sm:text-4xl";
-  if (digits === 4) return "text-xl sm:text-3xl";
-  return "text-lg sm:text-2xl";
+  if (digits <= 2) return "text-[11cqw]";
+  if (digits === 3) return "text-[8.5cqw]";
+  if (digits === 4) return "text-[6.5cqw]";
+  return "text-[5cqw]";
 }
+
+const TOUCH = { pad: true };
 
 export default function Game2048() {
   const [game, setGame] = useState<Game | null>(null);
@@ -139,6 +129,22 @@ export default function Game2048() {
       overTitle="No more moves"
       overMessage={<p>You scored {score.toLocaleString("en-US")} points.</p>}
       isNewBest={isNewBest}
+      touch={TOUCH}
+      onDirection={(dir) => dir && play(dir)}
+      callout={
+        game?.won && (
+          <span className="rounded-full bg-surface/95 px-3 py-1 text-sm font-semibold shadow">
+            🎉 You made 2048! Keep going.
+          </span>
+        )
+      }
+      below={
+        <DPad
+          label="Move tiles"
+          onDirection={(dir) => dir && play(dir)}
+          className="mx-auto"
+        />
+      }
       howToPlay={
         <ul>
           <li>
@@ -160,14 +166,8 @@ export default function Game2048() {
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>
-      {game?.won && (
-        <p className="mb-3 rounded-xl bg-surface-2 px-3 py-2 text-center font-semibold">
-          🎉 You made 2048! Keep going.
-        </p>
-      )}
-
       <div
-        className="relative mx-auto aspect-square w-full max-w-md touch-none rounded-2xl bg-line select-none"
+        className="relative size-full touch-none rounded-2xl bg-line select-none"
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={() => (swipeStart.current = null)}
@@ -191,32 +191,6 @@ export default function Game2048() {
       </div>
 
       {game && <BoardTable game={game} />}
-
-      <div
-        className="mx-auto mt-4 grid w-44 grid-cols-3 gap-2"
-        role="group"
-        aria-label="Move tiles"
-      >
-        <ArrowButton dir="up" label="↑" className="col-start-2" onMove={play} />
-        <ArrowButton
-          dir="left"
-          label="←"
-          className="col-start-1 row-start-2"
-          onMove={play}
-        />
-        <ArrowButton
-          dir="down"
-          label="↓"
-          className="col-start-2 row-start-2"
-          onMove={play}
-        />
-        <ArrowButton
-          dir="right"
-          label="→"
-          className="col-start-3 row-start-2"
-          onMove={play}
-        />
-      </div>
     </GameShell>
   );
 }
@@ -268,28 +242,5 @@ function BoardTable({ game }: { game: Game }) {
         ))}
       </tbody>
     </table>
-  );
-}
-
-function ArrowButton({
-  dir,
-  label,
-  className,
-  onMove,
-}: {
-  dir: Direction;
-  label: string;
-  className: string;
-  onMove: (dir: Direction) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`btn-secondary text-xl ${className}`}
-      aria-label={`Move ${dir}`}
-      onClick={() => onMove(dir)}
-    >
-      <span aria-hidden="true">{label}</span>
-    </button>
   );
 }

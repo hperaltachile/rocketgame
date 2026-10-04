@@ -10,6 +10,7 @@ import {
   type Snake,
 } from "@/lib/games/snake/logic";
 import type { BaseCommand, GameBridge } from "../shared/bridge";
+import { bake, fitCamera, HI } from "../shared/phaserConfig";
 import { sfx } from "../shared/sfx";
 
 export type SnakeCommand = BaseCommand | { type: "turn"; dir: Direction };
@@ -35,14 +36,15 @@ export class SnakeScene extends Phaser.Scene {
   }
 
   create() {
+    fitCamera(this, BOARD, BOARD);
     this.makeTextures();
-    this.add.image(0, 0, "snake-bg").setOrigin(0);
+    this.add.image(0, 0, "snake-bg").setOrigin(0).setScale(HI);
     this.g = this.add.graphics();
-    this.star = this.add.image(0, 0, "snake-star");
+    this.star = this.add.image(0, 0, "snake-star").setScale(HI);
     if (!this.bridge.reducedMotion) {
       this.tweens.add({
         targets: this.star,
-        scale: { from: 0.85, to: 1.1 },
+        scale: { from: 0.85 * HI, to: 1.1 * HI },
         angle: { from: -10, to: 10 },
         duration: 600,
         yoyo: true,
@@ -53,7 +55,7 @@ export class SnakeScene extends Phaser.Scene {
     this.sparkle = this.add.particles(0, 0, "snake-spark", {
       speed: { min: 40, max: 160 },
       lifespan: 450,
-      scale: { start: 1, end: 0 },
+      scale: { start: HI, end: 0 },
       tint: [0xffd166, 0xfff3b0, 0x7ee8c9],
       blendMode: Phaser.BlendModes.ADD,
       emitting: false,
@@ -101,8 +103,7 @@ export class SnakeScene extends Phaser.Scene {
         rng.realInRange(0.5, 1.4),
       );
     }
-    g.generateTexture("snake-bg", BOARD, BOARD);
-    g.clear();
+    bake(g, "snake-bg", BOARD, BOARD);
 
     // Five-point star.
     const points: Phaser.Math.Vector2[] = [];
@@ -117,12 +118,11 @@ export class SnakeScene extends Phaser.Scene {
     g.lineStyle(1.5, 0xb7791f);
     g.fillPoints(points, true);
     g.strokePoints(points, true);
-    g.generateTexture("snake-star", 24, 24);
-    g.clear();
+    bake(g, "snake-star", 24, 24);
 
     g.fillStyle(0xffffff);
     g.fillCircle(3, 3, 3);
-    g.generateTexture("snake-spark", 6, 6);
+    bake(g, "snake-spark", 6, 6);
     g.destroy();
   }
 

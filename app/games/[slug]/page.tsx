@@ -34,7 +34,10 @@ export default async function GamePage({ params }: PageProps<"/games/[slug]">) {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="mx-auto mb-4 max-w-2xl text-sm">
+      <nav
+        aria-label="Breadcrumb"
+        className="mx-auto mb-4 hidden max-w-2xl text-sm sm:block"
+      >
         <Link href="/#games" className="rounded text-muted hover:text-text">
           ← All games
         </Link>

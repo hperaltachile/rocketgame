@@ -9,6 +9,7 @@ import {
   SETTINGS_KEY,
   subscribe,
   writeSettings,
+  type Settings,
 } from "@/lib/storage";
 
 /** Raw localStorage value, kept in sync across components and tabs. `null` during SSR. */
@@ -25,26 +26,42 @@ export function useBest(slug: string): number | null {
   return useMemo(() => parseBest(raw), [raw]);
 }
 
-export function useSound(): [boolean, (on: boolean) => void] {
+/** One on/off setting from `Settings`, with a setter that persists it. */
+export function useSetting(
+  name: keyof Settings,
+): [boolean, (on: boolean) => void] {
   const raw = useStoredRaw(SETTINGS_KEY);
-  const sound = useMemo(() => parseSettings(raw).sound, [raw]);
-  const setSound = useCallback(
-    (on: boolean) => writeSettings({ sound: on }),
-    [],
+  const value = useMemo(() => parseSettings(raw)[name], [raw, name]);
+  const setValue = useCallback(
+    (on: boolean) => writeSettings({ [name]: on }),
+    [name],
   );
-  return [sound, setSound];
+  return [value, setValue];
 }
 
-function subscribeReducedMotion(onChange: () => void): () => void {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
+export const useSound = () => useSetting("sound");
 
-export function useReducedMotion(): boolean {
+/** Live result of a CSS media query; `false` during SSR. */
+export function useMediaQuery(query: string): boolean {
+  const subscribeQuery = useCallback(
+    (onChange: () => void) => {
+      const list = window.matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    [query],
+  );
   return useSyncExternalStore(
-    subscribeReducedMotion,
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    subscribeQuery,
+    () => window.matchMedia(query).matches,
     () => false,
   );
 }
+
+export const useReducedMotion = () =>
+  useMediaQuery("(prefers-reduced-motion: reduce)");
+
+/** Touch screen as the main input (phones, tablets), not mouse + keyboard. */
+export const useCoarsePointer = () => useMediaQuery("(pointer: coarse)");
+
+export const usePortrait = () => useMediaQuery("(orientation: portrait)");

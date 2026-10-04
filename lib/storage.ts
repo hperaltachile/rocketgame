@@ -82,17 +82,31 @@ export function recordBest(
 
 export const SETTINGS_KEY = "rocketgame:settings";
 
-export type Settings = { sound: boolean };
+export type Settings = {
+  sound: boolean;
+  /** On-screen touch controls in fullscreen. */
+  touchControls: boolean;
+  /** Short buzz when a touch control is pressed (if the device supports it). */
+  vibration: boolean;
+};
 
-const DEFAULT_SETTINGS: Settings = { sound: true };
+const DEFAULT_SETTINGS: Settings = {
+  sound: true,
+  touchControls: true,
+  vibration: true,
+};
+
+const flag = (value: unknown, fallback: boolean) =>
+  typeof value === "boolean" ? value : fallback;
 
 export function parseSettings(raw: string | null): Settings {
   if (raw === null) return DEFAULT_SETTINGS;
   try {
     const value = JSON.parse(raw) as Partial<Settings>;
     return {
-      sound:
-        typeof value.sound === "boolean" ? value.sound : DEFAULT_SETTINGS.sound,
+      sound: flag(value.sound, DEFAULT_SETTINGS.sound),
+      touchControls: flag(value.touchControls, DEFAULT_SETTINGS.touchControls),
+      vibration: flag(value.vibration, DEFAULT_SETTINGS.vibration),
     };
   } catch {
     return DEFAULT_SETTINGS;

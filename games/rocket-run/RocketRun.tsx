@@ -11,6 +11,8 @@ const load = () => import("./createGame").then((m) => m.createGame);
 
 const BOOST_KEYS = new Set([" ", "ArrowUp", "w", "W"]);
 
+const TOUCH = { actions: [{ id: "boost", label: "Boost", icon: "🔥" }] };
+
 export default function RocketRun() {
   const { bridge, status, loaded, shellProps } = usePhaserShell<{
     type: "boost";
@@ -40,6 +42,13 @@ export default function RocketRun() {
   return (
     <GameShell
       {...shellProps}
+      aspect={3 / 2}
+      maxWidth="42rem"
+      landscape
+      touch={TOUCH}
+      onAction={(_id, pressed) => {
+        if (pressed && status === "playing") bridge.send({ type: "boost" });
+      }}
       overTitle="Crash!"
       overMessage={
         <p>You scored {shellProps.score.toLocaleString("en-US")} points.</p>
@@ -58,7 +67,6 @@ export default function RocketRun() {
       }
     >
       <Stage
-        aspect="3 / 2"
         loaded={loaded}
         poster={<span className="animate-float inline-block">🚀</span>}
       >

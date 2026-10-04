@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
+  // "Add to Home Screen" on iPhone opens full screen, without the address bar.
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
   openGraph: openGraph(
     `${SITE_NAME} — quick, free browser games`,
     SITE_DESCRIPTION,
@@ -30,6 +32,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Use the whole screen on phones with notches (safe areas are padded in CSS).
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f4f6ff" },
     { media: "(prefers-color-scheme: dark)", color: "#0b1026" },
@@ -82,7 +86,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </nav>
         </header>
 
-        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        <main
+          id="main"
+          className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 sm:py-8"
+        >
           {children}
         </main>
 

@@ -10,6 +10,7 @@ import {
   type Flight,
 } from "@/lib/games/rocket-run/logic";
 import type { BaseCommand, GameBridge } from "../shared/bridge";
+import { bake, fitCamera, HI } from "../shared/phaserConfig";
 import { sfx } from "../shared/sfx";
 
 export type RocketCommand = BaseCommand | { type: "boost" };
@@ -43,8 +44,7 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0x4cc9f0);
     g.fillCircle(34, 16, 5);
     g.strokeCircle(34, 16, 5);
-    g.generateTexture("rocket", 56, 32);
-    g.clear();
+    bake(g, "rocket", 56, 32);
 
     // Asteroid (64×64): lumpy rock with craters.
     const rng = new Phaser.Math.RandomDataGenerator(["rocket-run"]);
@@ -67,16 +67,16 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(24, 26, 6);
     g.fillCircle(40, 40, 8);
     g.fillCircle(40, 20, 4);
-    g.generateTexture("asteroid", 64, 64);
-    g.clear();
+    bake(g, "asteroid", 64, 64);
 
     // Particle spark (8×8).
     g.fillStyle(0xffffff);
     g.fillCircle(4, 4, 4);
-    g.generateTexture("spark", 8, 8);
-    g.clear();
+    bake(g, "spark", 8, 8);
 
-    // Three star layers for parallax (256×256 tiles).
+    // Three star layers for parallax (256×256 tiles). Soft dots, so these
+    // stay at 1× (tiled sprites with a scaled texture are fiddly).
+    g.setScale(1);
     const layers: [string, number, number, number][] = [
       ["stars-far", 70, 1, 0.35],
       ["stars-mid", 35, 1.5, 0.6],
@@ -122,6 +122,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   create() {
+    fitCamera(this, W, H);
     this.layers = [
       [this.add.tileSprite(0, 0, W, H, "stars-far").setOrigin(0), 0.08],
       [this.add.tileSprite(0, 0, W, H, "stars-mid").setOrigin(0), 0.25],
@@ -133,27 +134,30 @@ export class PlayScene extends Phaser.Scene {
       speedX: { min: -260, max: -140 },
       speedY: { min: -35, max: 35 },
       lifespan: reduced ? 220 : 380,
-      scale: { start: 1, end: 0 },
+      scale: { start: HI, end: 0 },
       alpha: { start: 1, end: 0 },
       tint: [0xffb020, 0xff5a1f, 0xffe08a],
       blendMode: Phaser.BlendModes.ADD,
       frequency: reduced ? 90 : 25,
     });
 
-    this.rocket = this.physics.add.image(ROCKET.x, H / 2, "rocket");
+    this.rocket = this.physics.add
+      .image(ROCKET.x, H / 2, "rocket")
+      .setScale(HI);
     const rocketBody = this.rocket.body as Phaser.Physics.Arcade.Body;
     rocketBody.moves = false;
+    // Body sizes are in texture pixels (2×), scaled down with the image.
     rocketBody.setCircle(
-      ROCKET.radius + 4,
-      28 - ROCKET.radius - 4,
-      16 - ROCKET.radius - 4,
+      (ROCKET.radius + 4) / HI,
+      (28 - ROCKET.radius - 4) / HI,
+      (16 - ROCKET.radius - 4) / HI,
     );
     this.exhaust.startFollow(this.rocket, -26, 0);
 
     this.boom = this.add.particles(0, 0, "spark", {
       speed: { min: 60, max: 320 },
       lifespan: 700,
-      scale: { start: 1.6, end: 0 },
+      scale: { start: 1.6 * HI, end: 0 },
       tint: [0xffb020, 0xff5a1f, 0xe8ecff],
       blendMode: Phaser.BlendModes.ADD,
       emitting: false,
@@ -280,10 +284,10 @@ export class PlayScene extends Phaser.Scene {
       spec.y,
       "asteroid",
     ) as Phaser.Physics.Arcade.Image;
-    // The rock in the texture is ~28 px radius inside a 64 px frame.
-    a.setScale(spec.radius / 28);
+    // The rock in the texture is ~28 px radius inside a 64 px frame (at 2×).
+    a.setScale((spec.radius / 28) * HI);
     a.setData({ radius: spec.radius, speedFactor: spec.speedFactor });
-    (a.body as Phaser.Physics.Arcade.Body).setCircle(28, 4, 4);
+    (a.body as Phaser.Physics.Arcade.Body).setCircle(28 / HI, 4 / HI, 4 / HI);
     a.setAngularVelocity(spec.spin);
     a.setVelocityX(-speed * spec.speedFactor);
     a.setTint(

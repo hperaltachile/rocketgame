@@ -124,6 +124,13 @@ export default function TicTacToe() {
       onPause={() => setStatus("paused")}
       onResume={() => setStatus("playing")}
       onRestart={start}
+      callout={
+        status === "playing" && (
+          <span className="rounded-full bg-surface/90 px-3 py-1 text-sm font-semibold shadow">
+            {computerTurn ? "Computer is thinking…" : "Your turn (X)"}
+          </span>
+        )
+      }
       overTitle={outcome ? titles[outcome] : "Game over"}
       overMessage={
         <p>
@@ -167,14 +174,10 @@ export default function TicTacToe() {
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>
-      <p className="mb-3 text-center font-semibold" aria-hidden="true">
-        {status === "playing" &&
-          (computerTurn ? "Computer is thinking…" : "Your turn (X)")}
-      </p>
       <div
         role="grid"
         aria-label="Tic-Tac-Toe board"
-        className="mx-auto grid aspect-square w-full max-w-sm grid-cols-3 gap-2 rounded-2xl bg-line p-2"
+        className="grid size-full grid-cols-3 grid-rows-3 gap-[2cqw] rounded-2xl bg-line p-[2cqw]"
       >
         {[0, 1, 2].map((r) => (
           <div role="row" key={r} className="contents">
@@ -188,7 +191,7 @@ export default function TicTacToe() {
                     {...cellProps(index)}
                     aria-label={`Row ${r + 1}, column ${c + 1}: ${mark ?? "empty"}`}
                     aria-disabled={!!mark || computerTurn}
-                    className={`flex size-full items-center justify-center rounded-xl font-display text-5xl font-semibold sm:text-6xl ${
+                    className={`flex size-full items-center justify-center rounded-xl font-display text-[18cqw] font-semibold ${
                       winningLine.has(index)
                         ? "bg-accent text-on-accent"
                         : `bg-surface ${mark === "X" ? "text-accent" : "text-accent-2"}`
