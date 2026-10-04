@@ -1,6 +1,8 @@
 /** Pure 2048 rules: no React, no DOM. `rng` is injectable for tests. */
 
-export type Direction = "up" | "down" | "left" | "right";
+import type { Direction } from "../../input";
+
+export type { Direction };
 
 export type Tile = {
   id: number;

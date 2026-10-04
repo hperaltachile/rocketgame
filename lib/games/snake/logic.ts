@@ -1,7 +1,9 @@
 /** Pure Snake rules on a square grid. `rng` is injectable for tests. */
 
+import type { Direction } from "../../input";
+
+export type { Direction };
 export type Point = { x: number; y: number };
-export type Direction = "up" | "down" | "left" | "right";
 export type Rng = () => number;
 
 export const GRID_SIZE = 18;

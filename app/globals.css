@@ -57,11 +57,159 @@ body {
     radial-gradient(1px 1px at 230px 170px, var(--star), transparent);
   background-size: 260px 200px;
   color: var(--text);
+  /* Keep content clear of notches and rounded corners (viewport-fit=cover). */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* No double-tap zoom delay on controls (pinch zoom still works on pages). */
+a,
+button,
+input,
+select,
+label {
+  touch-action: manipulation;
+}
+
+/* While a game is running: no pull-to-refresh or rubber-band scrolling. */
+html.is-playing,
+html.is-playing body {
+  overscroll-behavior: none;
+}
+
+/* Pseudo-fullscreen (iPhone): the page behind the game must not move. */
+html.fs-lock,
+html.fs-lock body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/*
+ * Game stage (components/GameShell.tsx). On the page the board is sized to
+ * fit the screen height too, so a phone shows the whole game without
+ * scrolling. In fullscreen the stage fills the screen and the board scales to
+ * the largest size that fits, keeping its aspect ratio.
+ */
+.game-stage {
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-fit {
+  display: flex;
+  justify-content: center;
+}
+
+.game-board {
+  container: board / inline-size;
+  aspect-ratio: var(--aspect);
+  width: min(
+    100%,
+    var(--board-max),
+    max(16rem, calc((100svh - 19rem) * var(--aspect)))
+  );
+}
+
+.game-bar {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.game-stage[data-fullscreen="native"],
+.game-stage[data-fullscreen="pseudo"] {
+  container: stage / size;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #0b1026;
+  background-image:
+    radial-gradient(
+      1.5px 1.5px at 20px 30px,
+      rgb(255 255 255 / 0.5),
+      transparent
+    ),
+    radial-gradient(1px 1px at 90px 120px, rgb(255 255 255 / 0.5), transparent),
+    radial-gradient(
+      1.5px 1.5px at 160px 60px,
+      rgb(255 255 255 / 0.5),
+      transparent
+    );
+  background-size: 260px 200px;
+}
+
+.game-stage[data-fullscreen="pseudo"] {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  height: 100dvh;
+}
+
+.game-stage[data-fullscreen="native"] .game-fit,
+.game-stage[data-fullscreen="pseudo"] .game-fit {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+}
+
+.game-stage[data-fullscreen="native"] .game-board,
+.game-stage[data-fullscreen="pseudo"] .game-board {
+  width: min(100cqw - 1rem, (100cqh - 1rem) * var(--aspect));
+}
+
+.game-stage[data-fullscreen="native"] .game-bar,
+.game-stage[data-fullscreen="pseudo"] .game-bar {
+  position: absolute;
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 25;
+  margin: 0;
+  min-height: 0;
+}
+
+.game-stage[data-fullscreen="native"] .game-bar > p,
+.game-stage[data-fullscreen="pseudo"] .game-bar > p {
+  display: none;
+}
+
+.hud-left,
+.tc-left {
+  left: max(0.75rem, env(safe-area-inset-left));
+}
+
+.hud-right,
+.tc-right {
+  right: max(0.75rem, env(safe-area-inset-right));
+}
+
+.hud-left {
+  flex-direction: column;
+}
+
+.hud-right {
+  flex-direction: column;
+}
+
+/* Tall screens: score along the top, board between the bars. */
+@container stage (orientation: portrait) {
+  .game-stage[data-fullscreen="native"] .game-board,
+  .game-stage[data-fullscreen="pseudo"] .game-board {
+    width: min(100cqw - 1rem, (100cqh - 12rem) * var(--aspect));
+  }
+  .hud-left,
+  .hud-right {
+    flex-direction: row;
+  }
 }
 
 @layer components {
@@ -131,6 +279,22 @@ body {
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+}
+
+@keyframes rotate-phone {
+  0%,
+  30% {
+    transform: rotate(0deg);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}
+
+.animate-rotate-phone {
+  display: inline-block;
+  animation: rotate-phone 2s ease-in-out infinite alternate;
 }
 
 /* 2048 tiles: appear/pop after the 100ms slide finishes. */

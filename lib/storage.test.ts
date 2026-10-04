@@ -68,8 +68,25 @@ describe("with working storage", () => {
   });
 
   it("merges settings patches over defaults", () => {
-    expect(parseSettings(readRaw(SETTINGS_KEY))).toEqual({ sound: true });
+    expect(parseSettings(readRaw(SETTINGS_KEY))).toEqual({
+      sound: true,
+      touchControls: true,
+      vibration: true,
+    });
     writeSettings({ sound: false });
-    expect(parseSettings(readRaw(SETTINGS_KEY))).toEqual({ sound: false });
+    writeSettings({ vibration: false });
+    expect(parseSettings(readRaw(SETTINGS_KEY))).toEqual({
+      sound: false,
+      touchControls: true,
+      vibration: false,
+    });
+  });
+
+  it("ignores settings of the wrong type", () => {
+    expect(parseSettings('{"sound":"no","touchControls":0}')).toEqual({
+      sound: true,
+      touchControls: true,
+      vibration: true,
+    });
   });
 });

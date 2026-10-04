@@ -38,13 +38,20 @@ export default function PhaserGame<Bridge>({
     let game: Phaser.Game | undefined;
     let cancelled = false;
 
+    const parent = parentRef.current;
     load().then((createGame) => {
-      if (cancelled || !parentRef.current) return;
-      game = createGame(parentRef.current, bridge);
+      if (cancelled || !parent) return;
+      game = createGame(parent, bridge);
     });
+
+    // Fullscreen, rotation and window resizes change the box: re-fit the
+    // canvas right away instead of waiting for Phaser's own resize polling.
+    const observer = new ResizeObserver(() => game?.scale.refresh());
+    if (parent) observer.observe(parent);
 
     return () => {
       cancelled = true;
+      observer.disconnect();
       game?.destroy(true);
     };
   }, [load, bridge]);

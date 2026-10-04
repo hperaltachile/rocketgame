@@ -3,29 +3,17 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 import GameShell from "@/components/GameShell";
 import PhaserGame from "@/components/PhaserGame";
-import type { Direction } from "@/lib/games/snake/logic";
+import { DPad } from "@/components/TouchControls";
+import { KEY_DIRECTIONS, type Direction } from "@/lib/input";
 import Stage from "../shared/Stage";
 import { usePhaserShell } from "../shared/usePhaserShell";
 
 // Phaser is only downloaded when this import runs (first Start).
 const load = () => import("./createGame").then((m) => m.createGame);
 
-const KEY_DIRECTIONS: Record<string, Direction> = {
-  ArrowUp: "up",
-  ArrowDown: "down",
-  ArrowLeft: "left",
-  ArrowRight: "right",
-  w: "up",
-  s: "down",
-  a: "left",
-  d: "right",
-  W: "up",
-  S: "down",
-  A: "left",
-  D: "right",
-};
-
 const SWIPE_MIN_PX = 20;
+
+const TOUCH = { pad: true };
 
 export default function SnakeGame() {
   const { bridge, status, loaded, shellProps } = usePhaserShell<{
@@ -34,8 +22,8 @@ export default function SnakeGame() {
   }>("snake");
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
-  const steer = (dir: Direction) => {
-    if (status === "playing") bridge.send({ type: "turn", dir });
+  const steer = (dir: Direction | null) => {
+    if (dir && status === "playing") bridge.send({ type: "turn", dir });
   };
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -74,6 +62,8 @@ export default function SnakeGame() {
   return (
     <GameShell
       {...shellProps}
+      touch={TOUCH}
+      onDirection={steer}
       overTitle="Game over"
       overMessage={
         <p>
@@ -95,9 +85,18 @@ export default function SnakeGame() {
           </li>
         </ul>
       }
+      below={
+        <div className="hidden pointer-coarse:block">
+          <DPad
+            label="Steer the snake"
+            onDirection={steer}
+            className="mx-auto"
+          />
+        </div>
+      }
     >
       <div
-        className="mx-auto max-w-md"
+        className="size-full"
         onPointerDown={(e) =>
           (swipeStart.current = { x: e.clientX, y: e.clientY })
         }
@@ -106,7 +105,6 @@ export default function SnakeGame() {
         onPointerCancel={() => (swipeStart.current = null)}
       >
         <Stage
-          aspect="1 / 1"
           loaded={loaded}
           poster={<span className="animate-float inline-block">🐍</span>}
         >
@@ -118,63 +116,6 @@ export default function SnakeGame() {
           />
         </Stage>
       </div>
-
-      <div
-        role="group"
-        aria-label="Steer the snake"
-        className="mx-auto mt-4 hidden w-48 grid-cols-3 gap-2 pointer-coarse:grid"
-      >
-        <PadButton dir="up" label="↑" className="col-start-2" onPress={steer} />
-        <PadButton
-          dir="left"
-          label="←"
-          className="col-start-1 row-start-2"
-          onPress={steer}
-        />
-        <PadButton
-          dir="down"
-          label="↓"
-          className="col-start-2 row-start-2"
-          onPress={steer}
-        />
-        <PadButton
-          dir="right"
-          label="→"
-          className="col-start-3 row-start-2"
-          onPress={steer}
-        />
-      </div>
     </GameShell>
-  );
-}
-
-function PadButton({
-  dir,
-  label,
-  className,
-  onPress,
-}: {
-  dir: Direction;
-  label: string;
-  className: string;
-  onPress: (dir: Direction) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`btn-secondary min-h-14 text-2xl ${className}`}
-      aria-label={`Go ${dir}`}
-      // pointerdown reacts faster than click on touch screens.
-      onPointerDown={(e) => {
-        e.preventDefault();
-        onPress(dir);
-      }}
-      onClick={(e) => {
-        // Keyboard activation (Enter/Space) still works.
-        if (e.detail === 0) onPress(dir);
-      }}
-    >
-      <span aria-hidden="true">{label}</span>
-    </button>
   );
 }

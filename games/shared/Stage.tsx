@@ -3,25 +3,21 @@
 import type { ReactNode } from "react";
 
 /**
- * Fixed-aspect box for a Phaser canvas. Before the first Start it shows a
- * lightweight poster instead, so Phaser only downloads when someone plays.
+ * Box for a Phaser canvas; fills GameShell's board, which keeps the aspect
+ * ratio. Before the first Start it shows a lightweight poster instead, so
+ * Phaser only downloads when someone plays.
  */
 export default function Stage({
-  aspect,
   loaded,
   poster,
   children,
 }: {
-  aspect: string;
   loaded: boolean;
   poster: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div
-      className="relative w-full touch-none overflow-hidden rounded-2xl bg-[#0b1026] ring-2 ring-line select-none"
-      style={{ aspectRatio: aspect }}
-    >
+    <div className="relative size-full touch-none overflow-hidden rounded-2xl bg-[#0b1026] ring-2 ring-line select-none">
       {loaded ? (
         <div className="absolute inset-0">{children}</div>
       ) : (
