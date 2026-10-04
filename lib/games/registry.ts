@@ -1,6 +1,7 @@
 export type GameSlug =
   | "rocket-run"
   | "comet-kick"
+  | "star-slugger"
   | "snake"
   | "minesweeper"
   | "tictactoe"
@@ -46,6 +47,17 @@ export const GAMES: readonly GameInfo[] = [
     icon: "⚽",
     engine: "phaser",
     best: { label: "Best", direction: "high", unit: "/5" },
+    available: true,
+  },
+  {
+    slug: "star-slugger",
+    name: "Star Slugger",
+    tagline: "Time your swing and blast home runs.",
+    description:
+      "Batter up against the Moon Pitcher! Swing at just the right moment for hits and home runs — 3 strikes is an out, 3 outs ends the game.",
+    icon: "⚾",
+    engine: "phaser",
+    best: { label: "Best", direction: "high" },
     available: true,
   },
   {

@@ -4,7 +4,7 @@ All games in RocketGame are original implementations. The RocketGame rocket logo
 
 Game sprites (rockets, asteroids, stars, the goalie, the stadium, particles and confetti) are drawn in code at load time, and sound effects (boosts, kicks, crowd cheers and so on) are synthesized in code with the Web Audio API (`games/shared/sfx.ts`), so the games ship no third-party art or audio files.
 
-Game names, characters, teams and places (Comet Kick, Bolt the robot goalie, Crater Field...) are made up for RocketGame. No real brands, leagues, teams, players or logos are used.
+Game names, characters, teams and places (Comet Kick, Bolt the robot goalie, Crater Field, Star Slugger, the Moon Pitcher...) are made up for RocketGame. No real brands, leagues, teams, players or logos are used.
 
 Only original, CC0 or otherwise properly licensed assets may be added. List every third-party asset here **and** on the `/about` page.
 

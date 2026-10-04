@@ -18,7 +18,6 @@ import {
   usePortrait,
   useReducedMotion,
   useSetting,
-  useSound,
 } from "./hooks";
 import SoundToggle from "./SoundToggle";
 import TouchControls, { type TouchLayout } from "./TouchControls";
@@ -296,7 +295,6 @@ export default function GameShell({
           <FullscreenHud
             stats={allStats}
             status={status}
-            hasSound={hasSound}
             onPause={onPause}
             onResume={onResume}
             touchToggle={
@@ -365,6 +363,15 @@ export default function GameShell({
                       <p className="mt-1 text-muted">
                         Press P or Esc to resume.
                       </p>
+                      {fullscreen.active && (
+                        // The fullscreen corners only fit Pause and the
+                        // controls toggle on a phone held sideways, so the
+                        // other settings live here.
+                        <div className="mt-3 flex justify-center gap-2">
+                          {hasSound && <SoundToggle />}
+                          {coarse && hasTouchControls && <VibrationToggle />}
+                        </div>
+                      )}
                       <button
                         ref={primaryRef}
                         type="button"
@@ -499,14 +506,12 @@ function StatBox({ label, value }: Stat) {
 function FullscreenHud({
   stats,
   status,
-  hasSound,
   onPause,
   onResume,
   touchToggle,
 }: {
   stats: Stat[];
   status: GameStatus;
-  hasSound: boolean;
   onPause: () => void;
   onResume: () => void;
   touchToggle?: { on: boolean; set: (on: boolean) => void };
@@ -537,8 +542,15 @@ function FullscreenHud({
             {status === "playing" ? "⏸" : "▶"}
           </HudButton>
         )}
-        {touchToggle && <TouchToggles controls={touchToggle} />}
-        {hasSound && <HudSound />}
+        {touchToggle && (
+          <HudButton
+            label="On-screen controls"
+            pressed={touchToggle.on}
+            onClick={() => touchToggle.set(!touchToggle.on)}
+          >
+            🎮
+          </HudButton>
+        )}
       </div>
     </>
   );
@@ -571,40 +583,19 @@ function HudButton({
   );
 }
 
-function HudSound() {
-  const [sound, setSound] = useSound();
-  return (
-    <HudButton label="Sound" pressed={sound} onClick={() => setSound(!sound)}>
-      {sound ? "🔊" : "🔇"}
-    </HudButton>
-  );
-}
-
-function TouchToggles({
-  controls,
-}: {
-  controls: { on: boolean; set: (on: boolean) => void };
-}) {
+function VibrationToggle() {
   const [vibration, setVibration] = useSetting("vibration");
-  const canVibrate = typeof navigator !== "undefined" && "vibrate" in navigator;
+  if (!("vibrate" in navigator)) return null;
   return (
-    <>
-      <HudButton
-        label="On-screen controls"
-        pressed={controls.on}
-        onClick={() => controls.set(!controls.on)}
-      >
-        🎮
-      </HudButton>
-      {canVibrate && controls.on && (
-        <HudButton
-          label="Vibration"
-          pressed={vibration}
-          onClick={() => setVibration(!vibration)}
-        >
-          📳
-        </HudButton>
-      )}
-    </>
+    <button
+      type="button"
+      className="btn-secondary"
+      aria-pressed={vibration}
+      aria-label="Vibration"
+      title={vibration ? "Turn vibration off" : "Turn vibration on"}
+      onClick={() => setVibration(!vibration)}
+    >
+      <span aria-hidden="true">{vibration ? "📳" : "📴"}</span>
+    </button>
   );
 }

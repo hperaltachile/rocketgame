@@ -363,6 +363,23 @@ html.fs-lock body {
   transform: rotateY(180deg);
 }
 
+/*
+ * Swap which face is visible halfway through the flip. Safari ignores
+ * backface-visibility inside buttons, so 3D alone would show every card.
+ */
+.flip-face {
+  transition: visibility 0s linear 175ms;
+}
+
+.flip-back,
+.flip-inner.is-flipped .flip-face:not(.flip-back) {
+  visibility: hidden;
+}
+
+.flip-inner.is-flipped .flip-back {
+  visibility: visible;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
