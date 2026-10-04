@@ -28,6 +28,10 @@ const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: GameLoading,
   }),
+  "star-slugger": dynamic(() => import("@/games/star-slugger/StarSlugger"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
   snake: dynamic(() => import("@/games/snake/SnakeGame"), {
     ssr: false,
     loading: GameLoading,

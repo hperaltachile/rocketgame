@@ -45,13 +45,22 @@ export default function PhaserGame<Bridge>({
     });
 
     // Fullscreen, rotation and window resizes change the box: re-fit the
-    // canvas right away instead of waiting for Phaser's own resize polling.
-    const observer = new ResizeObserver(() => game?.scale.refresh());
+    // canvas right away instead of waiting for Phaser's own resize polling
+    // (pseudo-fullscreen on iPhone fires no window resize at all).
+    const observer = new ResizeObserver(() => {
+      if (game?.scale.getParentBounds()) game.scale.refresh();
+    });
     if (parent) observer.observe(parent);
+
+    // Phaser remembers where the canvas is on the page; if the page layout
+    // shifted since, re-measure before it handles the tap.
+    const remeasure = () => game?.scale.updateBounds();
+    parent?.addEventListener("pointerdown", remeasure, { capture: true });
 
     return () => {
       cancelled = true;
       observer.disconnect();
+      parent?.removeEventListener("pointerdown", remeasure, { capture: true });
       game?.destroy(true);
     };
   }, [load, bridge]);
