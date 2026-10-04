@@ -3,13 +3,15 @@
  * commands and settings; the scene reports score and game over. Commands sent
  * before the scene is listening (Phaser still loading) are queued.
  */
-export class GameBridge<Command> {
+export class GameBridge<Command, State = never> {
   /** Current settings, read by the scene whenever it needs them. */
   sound = true;
   reducedMotion = false;
 
   onScore: (score: number) => void = () => {};
   onOver: (score: number) => void = () => {};
+  /** Extra game state for the page (counters, messages), if the game has any. */
+  onState: (state: State) => void = () => {};
 
   private handler: ((command: Command) => void) | null = null;
   private queue: Command[] = [];
@@ -20,13 +22,15 @@ export class GameBridge<Command> {
     this.reducedMotion = settings.reducedMotion;
   }
 
-  /** Called by React to receive score updates and game over. */
+  /** Called by React to receive score updates, game over and extra state. */
   report(handlers: {
     onScore: (score: number) => void;
     onOver: (score: number) => void;
+    onState?: (state: State) => void;
   }): void {
     this.onScore = handlers.onScore;
     this.onOver = handlers.onOver;
+    if (handlers.onState) this.onState = handlers.onState;
   }
 
   send(command: Command): void {

@@ -281,6 +281,20 @@ html.fs-lock body {
   animation: float 4s ease-in-out infinite;
 }
 
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+}
+
+.animate-pop {
+  display: inline-block;
+  animation: pop 300ms ease-out;
+}
+
 @keyframes rotate-phone {
   0%,
   30% {
