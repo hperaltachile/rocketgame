@@ -9,6 +9,32 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-10-18: Arcade refresh: Rocket Run sectors, Nova Shootout, Cosmic Slam
+
+- **Feature: Rocket Run gets harder the longer you fly, in sectors.**
+  - Speed and time between waves now ease toward a cap (520 px/s, a wave every 0.62 s). Before, they rose in a straight line to a harsher cap (560 px/s, 0.42 s), so there are no sudden jumps now.
+  - Six sectors, each adding something new: Launch Pad (rocks), Rock Belt (wobbly rocks), Twin Rocks (rock gates), Comet Alley (fast comets with a blinking ⚠️ warning), Rock Walls (a wall with a gap that slowly narrows to 150 px) and Deep Space (everything).
+  - Each new sector shows a pixel-font banner, plays a chime, tints the sky and gives a 1.6 s breather. The HUD shows the sector, and the game-over message says how far you got.
+  - Every wave leaves an open gap of at least 140 px.
+- **Tests:** the flight rules now live in `stepRun`, shared by the game and a test autopilot. Over 60 autopilot runs, 90%+ clear sector 1, crashes per minute rise every sector (about 0.1 → 2.9), and the median run is about a minute.
+- **Feature: Comet Kick is now Nova Shootout ⚽**, redrawn as 16/32-bit style pixel art:
+  - Crater Field stadium with a ringed planet, floodlights, an animated alien crowd, and a jumbotron with hints and a lamp per kick.
+  - Bolt the robot goalie has idle, ready, dive, jump, cheer and sad frames. A new striker runs up and kicks.
+  - Spinning comet ball with a pixel trail, net ripple, star burst, screen flash, confetti and banners (GOAL!, SAVED!, POST!, KICK 3, LAST KICK!, FULL TIME!).
+- **Feature: Star Slugger is now Cosmic Slam ⚾**, redrawn the same way:
+  - Moonlit ballpark with a giant moon, and a scoreboard with strike and out lamps, score digits and the pitch speed.
+  - The Moon Pitcher has a cap and windup, throw and cheer frames. The batter swings through load, contact and follow-through frames.
+  - The ball is drawn at seven sizes for perspective. Hits get a star burst; home runs get fireworks, a flash and confetti.
+- **Changes:**
+  - Old `/games/comet-kick` and `/games/star-slugger` links redirect (308). Saved best scores and the goalie level move to the new names automatically.
+  - New shared pixel-art kit (`games/shared/pixel.ts`) and an original 5×7 pixel font (`lib/pixelFont.ts`). The font also draws the logos on the Ready screen (new GameShell `logo` prop).
+  - New synthesized sounds: blip, post clang, 8-bit fanfare and a sector chime.
+  - In the two sports games, hints and results moved from the floating callout into the canvas. They're still announced to screen readers.
+- **Design decisions:**
+  - Retro pixel art for the two sports games. Rocket Run keeps its smooth style but shares the pixel banners, so the collection feels consistent.
+  - The new names are original: Nova Shootout and Cosmic Slam.
+  - Rules, controls and scoring of both sports games are unchanged.
+
 ## 2026-10-04: Project docs
 
 - **Docs:**

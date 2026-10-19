@@ -1,7 +1,7 @@
 export type GameSlug =
   | "rocket-run"
-  | "comet-kick"
-  | "star-slugger"
+  | "nova-shootout"
+  | "cosmic-slam"
   | "snake"
   | "minesweeper"
   | "tictactoe"
@@ -39,22 +39,22 @@ export const GAMES: readonly GameInfo[] = [
     available: true,
   },
   {
-    slug: "comet-kick",
-    name: "Comet Kick",
-    tagline: "Score penalty kicks past Bolt the robot goalie.",
+    slug: "nova-shootout",
+    name: "Nova Shootout",
+    tagline: "Retro penalty kicks against Bolt the robot goalie.",
     description:
-      "Take 5 penalty kicks at Crater Field. Aim, stop the power bar, and beat Bolt the robot goalie — how many goals can you score?",
+      "A pixel-art penalty shootout at Crater Field. Aim, stop the power bar, and beat Bolt the robot goalie in 5 kicks — how many goals can you score?",
     icon: "⚽",
     engine: "phaser",
     best: { label: "Best", direction: "high", unit: "/5" },
     available: true,
   },
   {
-    slug: "star-slugger",
-    name: "Star Slugger",
-    tagline: "Time your swing and blast home runs.",
+    slug: "cosmic-slam",
+    name: "Cosmic Slam",
+    tagline: "Time your swing and blast pixel home runs.",
     description:
-      "Batter up against the Moon Pitcher! Swing at just the right moment for hits and home runs — 3 strikes is an out, 3 outs ends the game.",
+      "Batter up against the Moon Pitcher in a retro pixel ballpark! Swing at just the right moment for hits and home runs — 3 strikes is an out, 3 outs ends the game.",
     icon: "⚾",
     engine: "phaser",
     best: { label: "Best", direction: "high" },
@@ -116,6 +116,15 @@ export const GAMES: readonly GameInfo[] = [
     available: true,
   },
 ];
+
+/**
+ * Old slugs of renamed games. Their URLs redirect (next.config.ts) and their
+ * saved scores move to the new slug (lib/storage.ts).
+ */
+export const RENAMED_SLUGS: Readonly<Record<string, GameSlug>> = {
+  "comet-kick": "nova-shootout",
+  "star-slugger": "cosmic-slam",
+};
 
 export function getGame(slug: string): GameInfo | undefined {
   return GAMES.find((game) => game.slug === slug);

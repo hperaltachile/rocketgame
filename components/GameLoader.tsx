@@ -24,11 +24,11 @@ const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: GameLoading,
   }),
-  "comet-kick": dynamic(() => import("@/games/comet-kick/CometKick"), {
+  "nova-shootout": dynamic(() => import("@/games/nova-shootout/NovaShootout"), {
     ssr: false,
     loading: GameLoading,
   }),
-  "star-slugger": dynamic(() => import("@/games/star-slugger/StarSlugger"), {
+  "cosmic-slam": dynamic(() => import("@/games/cosmic-slam/CosmicSlam"), {
     ssr: false,
     loading: GameLoading,
   }),

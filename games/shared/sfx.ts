@@ -38,6 +38,38 @@ function tone(
   osc.stop(now + duration);
 }
 
+/** One chiptune note `start` seconds from now. */
+function note(
+  freq: number,
+  start: number,
+  duration: number,
+  type: OscillatorType = "square",
+  volume = 0.06,
+) {
+  const ctx = audio();
+  if (!ctx) return;
+  const at = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, at);
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.setValueAtTime(volume, at);
+  gain.gain.exponentialRampToValueAtTime(0.001, at + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(at);
+  osc.stop(at + duration + 0.02);
+}
+
+/** Notes one after another, `step` seconds apart. */
+function jingle(
+  freqs: number[],
+  step: number,
+  type: OscillatorType = "square",
+) {
+  freqs.forEach((freq, i) => note(freq, i * step, step * 1.6, type));
+}
+
 function noise(
   duration: number,
   cutoff: number,
@@ -98,6 +130,17 @@ export const sfx = {
       noise(1.1, 1400 + i * 300, 0.07, "bandpass", i * 0.12);
     tone(523, 1046, 0.25, "triangle", 0.06);
   },
+  /** Menu-style blip (aim locked, power bar starts). */
+  blip: () => note(988, 0, 0.06, "square", 0.05),
+  /** Ball off the post. */
+  clang: () => {
+    tone(1250, 980, 0.3, "square", 0.05);
+    tone(1870, 1500, 0.25, "triangle", 0.05);
+  },
+  /** 8-bit victory arpeggio for goals and home runs. */
+  fanfare: () => jingle([523, 659, 784, 1047, 784, 1047], 0.08),
+  /** Rising chime when Rocket Run enters a new sector. */
+  levelUp: () => jingle([392, 523, 659, 784], 0.07, "triangle"),
   /** A friendly "awww" for a miss. */
   aww: () => {
     tone(420, 240, 0.6, "triangle", 0.09);

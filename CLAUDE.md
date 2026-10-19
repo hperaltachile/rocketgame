@@ -28,12 +28,12 @@ CI (`.github/workflows/ci.yml`) runs lint, typecheck, format:check and test on e
 ```bash
 npm run build && npx next start -p 3123          # in one terminal
 node scripts/e2e/cdp.mjs scripts/e2e/fullscreen.mjs
-BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/kick.mjs
+BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 ```
 
 - **Suites:**
   - `fullscreen` covers every game; `GAMES=snake,2048` limits it.
-  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `kick`, `slugger`.
+  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`.
   - Also `home` (layout, JS size, PWA) and `copy` (site text).
 - **Run `fullscreen` one game at a time** (a loop over `GAMES=<slug>`). Headless Chrome refuses a second native-fullscreen request in the same tab.
 - **Screenshots** go to `scripts/e2e/out/` (git-ignored).
@@ -58,9 +58,13 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/kick.mjs
 | `components/TouchControls.tsx` | `DPad` (arrow pad that is also a thumb stick), `ActionButton`, and the `TouchControls` layer. Multi-touch, fires on pointerdown, vibrates. |
 | `components/GameLoader.tsx` | One `next/dynamic` chunk per game. Phaser games use `ssr: false`. |
 | `components/PhaserGame.tsx` | Creates and destroys a `Phaser.Game`, and re-fits it on resize. |
-| `games/shared/` | Phaser glue: `bridge.ts` (React ↔ scene commands, plus score/over/state callbacks), `usePhaserShell.ts`, `phaserConfig.ts`, `Stage.tsx` (the poster shown until Phaser loads), `sfx.ts` (Web Audio sounds). |
+| `games/shared/` | Phaser glue: `bridge.ts` (React ↔ scene commands, plus score/over/state callbacks), `usePhaserShell.ts`, `phaserConfig.ts`, `Stage.tsx` (the poster shown until Phaser loads), `sfx.ts` (Web Audio sounds and chiptune jingles). |
+| `games/shared/pixel.ts` | Pixel-art kit for the retro games: `Pixels` (a small canvas drawn in whole art pixels: shapes, dithered gradients, auto-outlines, text), `addTexture`/`addSheet` (crisp nearest-neighbour textures and frame sheets), banners (`addBanner`, `popBanner`), crowds, stars and shared effects. `ART = 3` world units per art pixel, so 720×480 is 240×160 art pixels. |
+| `lib/pixelFont.ts`, `games/shared/PixelLogo.tsx` | RocketGame's own 5×7 pixel font, used for in-game banners and for SVG title logos on the Ready screen (GameShell `logo`). |
+| `games/<slug>/art.ts` | For pixel-art games: every texture of the game, drawn in code. `scenes.ts` keeps the gameplay. |
 | `games/<slug>/` | The page component, plus `scenes.ts` and `createGame.ts` for Phaser games. |
-| `lib/storage.ts` | localStorage that never throws: best scores (`rocketgame:best:<slug>`) and settings (`rocketgame:settings`: sound, touchControls, vibration). |
+| `lib/storage.ts` | localStorage that never throws: best scores (`rocketgame:best:<slug>`) and settings (`rocketgame:settings`: sound, touchControls, vibration). `migrateRenamedGames` moves saved data of renamed games. |
+| `lib/games/rocket-run/autopilot.ts` | Test-only autopilot that flies whole runs through `stepRun`; the difficulty-curve tests use it. |
 
 **GameShell** handles, for every game:
 - the start, paused and game-over screens
@@ -73,9 +77,15 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/kick.mjs
 
 **Engines:**
 - **Phaser 3.90**, pinned and aliased to the arcade-physics build in `next.config.ts`:
-  - Used for Rocket Run, Snake, Comet Kick and Star Slugger.
+  - Used for Rocket Run, Snake, Nova Shootout and Cosmic Slam.
   - Phaser is downloaded only after the first Start.
 - **Plain React** for 2048, Minesweeper, Tic-Tac-Toe and Memory Match.
+
+### Renaming a game
+
+1. Rename the slug, folders and files, and the registry entry.
+2. Add `"old-slug": "new-slug"` to `RENAMED_SLUGS` in `lib/games/registry.ts`. Old URLs then 308-redirect (`next.config.ts`), and saved best scores and `rocketgame:<old-slug>:…` keys move to the new slug on the next visit.
+3. Update the e2e scripts, `CREDITS.md` and the docs.
 
 ### Adding a game (checklist)
 
@@ -102,7 +112,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/kick.mjs
 - **No creator references.** Never mention or describe the site's creator, or where they live, anywhere in the site copy.
 - **Original content only:**
   - No real brands, logos, leagues, teams, players, celebrities or recognisable characters. No copied art, sounds, music or fonts.
-  - Made-up names are fine (Comet Kick, Bolt the robot goalie, Crater Field, Star Slugger, the Moon Pitcher).
+  - Made-up names are fine (Nova Shootout, Bolt the robot goalie, Crater Field, Cosmic Slam, the Moon Pitcher).
   - Art is drawn in code and sounds are synthesized; fonts are OFL (Geist, Fredoka).
   - Any third-party asset must be CC0 or properly licensed, and listed in `CREDITS.md` and on `/about`.
 - **Google mentions.** The site copy says it is "inspired by" Google's little games, with a not-affiliated notice on `/about`. This is owner-approved; no Google logos or art.
@@ -124,6 +134,12 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/kick.mjs
   - home page JS under 150 KB gzipped
   - Lighthouse 90+ (80+ on Phaser pages)
   - games load only when opened
+- **Arcade look.** Nova Shootout and Cosmic Slam are 16/32-bit style pixel art, drawn with `games/shared/pixel.ts`:
+  - dark outlines, dithered gradients and sprite frames (prefer frames or size steps to rotating or smoothly scaling pixel sprites; small, fast things like the flying ball can scale)
+  - big result banners in the RocketGame pixel font (`popBanner`), with hints and counts on an in-game stadium screen
+  - Rocket Run keeps its smooth vector art, but its sector banners use the same pixel font, so the three feel like one collection
+- **Hints and results drawn in the canvas still need a screen-reader line:** a `role=status` element with `data-game-message`. It also carries `data-phase` (and `data-pitch` in Cosmic Slam), which the e2e tests read.
+- **Difficulty curves ease toward a cap** (exponential approach, no steps). New obstacles arrive in named sectors, with a short breather. Every wave must leave a gap of at least `MIN_GAP`. Tune with the autopilot tests in `lib/games/rocket-run/logic.test.ts`: nearly everyone clears sector 1, the crash rate rises sector by sector, and a typical run lasts about a minute.
 - **Fullscreen corners on short landscape phones only fit two buttons** (Pause and 🎮 controls). Other settings (sound, vibration) belong on the Paused screen.
 
 ## Gotchas (learned the hard way)
@@ -145,3 +161,6 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/kick.mjs
   - Run e2e suites one game per browser.
 - **Windows editing:** Python's `open()` defaults to cp1252 and CRLF, which corrupts `×`, `—` and emoji. Use `encoding="utf-8", newline=""`, or the Edit tool. `.gitattributes` forces LF.
 - **`gh` in Git Bash:** use the full path (see Deploying).
+- **A stopped `next dev` can leave its server child on the port.** `next start` then fails (EADDRINUSE) and the tests hit the old dev server. Check with `netstat -ano | grep :3123` and stop that `start-server.js` process.
+- **Phaser frame names can be numbers.** Compare `String(image.frame.name)`.
+- **Pixel textures need `setFilter(NEAREST)`** (`addTexture` does it). Draw shapes with the `Pixels` methods, pixel by pixel; canvas paths get anti-aliased edges.

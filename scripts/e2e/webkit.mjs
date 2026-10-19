@@ -6,8 +6,8 @@ import { webkit, devices } from "playwright";
 const BASE = process.env.BASE ?? "http://localhost:3123";
 const GAMES = [
   "rocket-run",
-  "comet-kick",
-  "star-slugger",
+  "nova-shootout",
+  "cosmic-slam",
   "snake",
   "minesweeper",
   "tictactoe",
@@ -51,7 +51,9 @@ for (const [name, device] of [
       (await page.locator("[role=dialog] h2").textContent()) ===
         "Turn your phone sideways!";
     ok(playing, `${slug}: starts`);
-    if (["rocket-run", "comet-kick", "star-slugger", "snake"].includes(slug)) {
+    if (
+      ["rocket-run", "nova-shootout", "cosmic-slam", "snake"].includes(slug)
+    ) {
       await page.waitForSelector("canvas", { timeout: 8000 }).catch(() => {});
       ok(
         (await page.locator("canvas").count()) === 1,
@@ -86,8 +88,8 @@ for (const [name, device] of [
       const controls = await page.locator("[data-touch-controls]").count();
       const expected = [
         "rocket-run",
-        "comet-kick",
-        "star-slugger",
+        "nova-shootout",
+        "cosmic-slam",
         "snake",
         "minesweeper",
         "2048",

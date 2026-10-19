@@ -16,13 +16,15 @@ export default async function scenario(page) {
     page.eval(
       `[...document.querySelectorAll("dl > div")].find(d => d.querySelector("dt").textContent === ${JSON.stringify(label)})?.querySelector("dd [aria-label]").getAttribute("aria-label")`,
     );
-  const callout = () =>
+  // Results are drawn in the canvas; the page mirrors them (and the pitch
+  // phase and travel time) on its screen-reader status line.
+  const message = () =>
     page.eval(
-      `document.querySelector(".game-board > div.pointer-events-none")?.textContent ?? ""`,
+      `document.querySelector("[data-game-message]")?.textContent ?? ""`,
     );
 
   await page.viewport(1280, 900);
-  await page.goto(BASE + "/games/star-slugger");
+  await page.goto(BASE + "/games/cosmic-slam");
   assert((await overlay()) === "Ready?", "start screen");
   await page.click("[role=dialog] button.btn-primary");
   for (
@@ -32,33 +34,33 @@ export default async function scenario(page) {
   )
     await page.sleep(100);
 
-  // Timed swings: watch for the pitch label to disappear (= release), then
-  // press Space when the ball should reach the plate.
+  // Timed swings: when the phase turns to "pitch" (the release), press
+  // Space when the ball should reach the plate.
   await page.eval(`(() => {
-    const TRAVEL = { "🐢 Slow pitch": 1500, "Medium pitch": 1150, "⚡ Fast pitch!": 850 };
     window.__swings = [];
-    let label = null;
-    const el = () => document.querySelector(".game-board > div.pointer-events-none");
+    let last = "";
     new MutationObserver(() => {
-      const text = el()?.textContent ?? "";
-      if (TRAVEL[text]) { label = text; return; }
-      if (label && text === "" && window.__autoSwing > 0) {
-        const travel = TRAVEL[label]; label = null; window.__autoSwing--;
+      const el = document.querySelector("[data-game-message]");
+      const phase = el?.dataset.phase ?? "";
+      if (phase === "pitch" && last !== "pitch" && window.__autoSwing > 0) {
+        const travel = Number(el.dataset.pitch);
+        window.__autoSwing--;
         setTimeout(() => { window.__swings.push(travel); window.dispatchEvent(new KeyboardEvent("keydown", { key: " " })); }, travel - 12);
       }
-    }).observe(document.body, { subtree: true, childList: true, characterData: true });
+      last = phase;
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["data-phase"] });
   })()`);
   await page.eval("window.__autoSwing = 3");
   const seen = [];
   for (let i = 0; i < 400 && seen.length < 3; i++) {
-    const c = await callout();
+    const c = await message();
     if (
       /HOME RUN|Nice hit|Foul|Strike/.test(c) &&
       seen.at(-1) !== c + seen.length
     ) {
       seen.push(c);
       if (seen.length === 1) await page.screenshot("slugger-result");
-      while (/HOME RUN|Nice hit|Foul|Strike/.test(await callout()))
+      while (/HOME RUN|Nice hit|Foul|Strike/.test(await message()))
         await page.sleep(50);
     }
     await page.sleep(25);
@@ -107,7 +109,7 @@ export default async function scenario(page) {
   );
   assert((await statAria("Outs")) === "3 outs", "outs counter shows 3");
   const best = await page.eval(
-    `localStorage.getItem("rocketgame:best:star-slugger")`,
+    `localStorage.getItem("rocketgame:best:cosmic-slam")`,
   );
   assert(Number(best) === score, `best saved (${best})`);
   await page.screenshot("slugger-over");
