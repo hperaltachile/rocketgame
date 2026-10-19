@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { RENAMED_SLUGS } from "@/lib/games/registry";
 import {
   bestKey,
+  migrateRenamedGames,
   parseBest,
   parseSettings,
   readRaw,
@@ -11,6 +13,9 @@ import {
   writeSettings,
   type Settings,
 } from "@/lib/storage";
+
+// Before anything reads a best score: carry over scores of renamed games.
+if (typeof window !== "undefined") migrateRenamedGames(RENAMED_SLUGS);
 
 /** Raw localStorage value, kept in sync across components and tabs. `null` during SSR. */
 export function useStoredRaw(key: string): string | null {

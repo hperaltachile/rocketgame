@@ -6,9 +6,9 @@ import PhaserGame from "@/components/PhaserGame";
 import {
   OUTS_PER_GAME,
   STRIKES_PER_OUT,
-  type PitchSpeed,
   type SwingResult,
-} from "@/lib/games/star-slugger/logic";
+} from "@/lib/games/cosmic-slam/logic";
+import PixelLogo from "../shared/PixelLogo";
 import Stage from "../shared/Stage";
 import { usePhaserShell } from "../shared/usePhaserShell";
 import type { SluggerState } from "./scenes";
@@ -18,17 +18,12 @@ const load = () => import("./createGame").then((m) => m.createGame);
 
 const TOUCH = { actions: [{ id: "swing", label: "Swing", icon: "🏏" }] };
 
+/** Read out to screen readers; the canvas shows the same as pixel banners. */
 const MESSAGES: Record<SwingResult, string> = {
   homeRun: "HOME RUN! 🎆",
   hit: "Nice hit! ⭐",
   foul: "Foul ball!",
   strike: "Strike!",
-};
-
-const SPEED_LABEL: Record<PitchSpeed, string> = {
-  slow: "🐢 Slow pitch",
-  medium: "Medium pitch",
-  fast: "⚡ Fast pitch!",
 };
 
 /** ●●○ style counter for strikes and outs. */
@@ -56,11 +51,11 @@ function Dots({
   );
 }
 
-export default function StarSlugger() {
+export default function CosmicSlam() {
   const { bridge, state, status, loaded, shellProps } = usePhaserShell<
     { type: "swing" },
     SluggerState
-  >("star-slugger");
+  >("cosmic-slam");
 
   const swing = () => {
     if (status === "playing") bridge.send({ type: "swing" });
@@ -85,10 +80,7 @@ export default function StarSlugger() {
   const count = started ? state.count : null;
   const message =
     state?.phase === "result" && state.last ? MESSAGES[state.last] : null;
-  const hint =
-    state?.phase === "windup" && state.pitch
-      ? SPEED_LABEL[state.pitch.speed]
-      : null;
+  // The pitch speed ("SLOW PITCH", "FAST PITCH!") shows on the scoreboard in the game.
   const hits = count?.hits ?? 0;
   const homeRuns = count?.homeRuns ?? 0;
 
@@ -126,25 +118,12 @@ export default function StarSlugger() {
       onAction={(id, pressed) => {
         if (id === "swing" && pressed) swing();
       }}
-      callout={
-        status === "playing" &&
-        (message ? (
-          <span
-            className={`rounded-full px-4 py-1.5 font-display text-xl font-semibold shadow-lg ${
-              state?.last === "homeRun" || state?.last === "hit"
-                ? "animate-pop bg-accent text-on-accent"
-                : "bg-surface/95 text-text"
-            }`}
-          >
-            {message}
-          </span>
-        ) : (
-          hint && (
-            <span className="rounded-full bg-[#0b1026]/70 px-3 py-1 text-sm font-semibold text-white">
-              {hint}
-            </span>
-          )
-        ))
+      logo={
+        <PixelLogo
+          lines={["COSMIC", "SLAM"]}
+          colors={["#fff27a", "#ff9f1c", "#e8590c"]}
+          className="mx-auto mb-3 w-full max-w-48"
+        />
       }
       overTitle="Three outs! ⚾"
       overMessage={
@@ -171,13 +150,20 @@ export default function StarSlugger() {
             as strike 3.
           </li>
           <li>
-            Watch for slow, medium and fast pitches. The more you score, the
-            faster they come!
+            The scoreboard tells you if a pitch is slow, medium or fast. The
+            more you score, the faster they come!
           </li>
         </ul>
       }
     >
-      <p role="status" aria-live="polite" className="sr-only">
+      <p
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+        data-game-message
+        data-phase={status === "playing" ? (state?.phase ?? "") : ""}
+        data-pitch={state?.pitch?.travelMs ?? ""}
+      >
         {message ?? ""}
       </p>
       <Stage
@@ -187,7 +173,7 @@ export default function StarSlugger() {
         <PhaserGame
           load={load}
           bridge={bridge}
-          label="Star Slugger game. Tap or press Space to swing."
+          label="Cosmic Slam game. Tap or press Space to swing."
           className="size-full"
         />
       </Stage>

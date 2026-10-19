@@ -8,9 +8,10 @@ import {
   KICKS,
   type Difficulty,
   type Outcome,
-} from "@/lib/games/comet-kick/logic";
+} from "@/lib/games/nova-shootout/logic";
 import { KEY_DIRECTIONS, type Direction } from "@/lib/input";
 import { writeJSON } from "@/lib/storage";
+import PixelLogo from "../shared/PixelLogo";
 import Stage from "../shared/Stage";
 import { usePhaserShell } from "../shared/usePhaserShell";
 import type { KickState } from "./scenes";
@@ -18,7 +19,7 @@ import type { KickState } from "./scenes";
 // Phaser is only downloaded when this import runs (first Start).
 const load = () => import("./createGame").then((m) => m.createGame);
 
-const DIFFICULTY_KEY = "rocketgame:comet-kick:difficulty";
+const DIFFICULTY_KEY = "rocketgame:nova-shootout:difficulty";
 const LEVELS: { id: Difficulty; label: string }[] = [
   { id: "easy", label: "Easy" },
   { id: "medium", label: "Medium" },
@@ -30,6 +31,7 @@ const TOUCH = {
   actions: [{ id: "kick", label: "Kick", icon: "⚽" }],
 };
 
+/** Read out to screen readers; the canvas shows the same as pixel banners. */
 const MESSAGES: Record<Outcome, string> = {
   goal: "GOAL! 🎉",
   saved: "Saved by Bolt! So close!",
@@ -60,11 +62,11 @@ type Command =
   | { type: "steer"; dir: Direction | null }
   | { type: "kick" };
 
-export default function CometKick() {
+export default function NovaShootout() {
   const { bridge, state, status, loaded, shellProps } = usePhaserShell<
     Command,
     KickState
-  >("comet-kick");
+  >("nova-shootout");
   const difficulty = parseDifficulty(useStoredRaw(DIFFICULTY_KEY));
 
   const start = () => {
@@ -118,12 +120,7 @@ export default function CometKick() {
   const goals = state?.goals ?? 0;
   const kicks = state?.kicks ?? 0;
   const playingRound = status !== "ready";
-  const hint =
-    state?.phase === "aim"
-      ? "Tap the goal to aim"
-      : state?.phase === "power"
-        ? "Tap again to shoot!"
-        : null;
+  // Hints ("TAP THE GOAL", "TAP TO SHOOT!") are on the stadium screen in the game.
   const message =
     state?.phase === "result" && state.last ? MESSAGES[state.last] : null;
 
@@ -166,25 +163,12 @@ export default function CometKick() {
           bridge.send({ type: "kick" });
         }
       }}
-      callout={
-        status === "playing" &&
-        (message ? (
-          <span
-            className={`rounded-full px-4 py-1.5 font-display text-xl font-semibold shadow-lg ${
-              state?.last === "goal"
-                ? "animate-pop bg-accent text-on-accent"
-                : "bg-surface/95 text-text"
-            }`}
-          >
-            {message}
-          </span>
-        ) : (
-          hint && (
-            <span className="rounded-full bg-[#0b1026]/70 px-3 py-1 text-sm font-semibold text-white">
-              {hint}
-            </span>
-          )
-        ))
+      logo={
+        <PixelLogo
+          lines={["NOVA", "SHOOTOUT"]}
+          colors={["#c8f4ff", "#4cc9f0", "#3a3fd1"]}
+          className="mx-auto mb-3 w-full max-w-56"
+        />
       }
       overTitle={
         goals >= 4
@@ -239,7 +223,13 @@ export default function CometKick() {
         </ul>
       }
     >
-      <p role="status" aria-live="polite" className="sr-only">
+      <p
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+        data-game-message
+        data-phase={status === "playing" ? (state?.phase ?? "") : ""}
+      >
         {message ?? ""}
       </p>
       <Stage
@@ -249,7 +239,7 @@ export default function CometKick() {
         <PhaserGame
           load={load}
           bridge={bridge}
-          label="Comet Kick game. Tap the goal to aim, then tap again to kick."
+          label="Nova Shootout game. Tap the goal to aim, then tap again to kick."
           className="size-full"
         />
       </Stage>

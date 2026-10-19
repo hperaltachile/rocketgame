@@ -10,8 +10,8 @@ const GAMES = {
   minesweeper: { pad: false, actions: ["flag"], landscape: false },
   tictactoe: { pad: false, actions: [], landscape: false },
   memory: { pad: false, actions: [], landscape: false },
-  "comet-kick": { pad: true, actions: ["kick"], landscape: true },
-  "star-slugger": { pad: false, actions: ["swing"], landscape: true },
+  "nova-shootout": { pad: true, actions: ["kick"], landscape: true },
+  "cosmic-slam": { pad: false, actions: ["swing"], landscape: true },
 };
 
 export default async function scenario(page) {

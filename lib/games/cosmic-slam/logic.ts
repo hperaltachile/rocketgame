@@ -1,4 +1,4 @@
-/** Pure Star Slugger (batting) rules: pitches, swing timing and the count. */
+/** Pure Cosmic Slam (batting) rules: pitches, swing timing and the count. */
 
 import type { Rng } from "../rng";
 

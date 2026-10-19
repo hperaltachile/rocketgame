@@ -78,6 +78,36 @@ export function recordBest(
   return isBetter;
 }
 
+/**
+ * Moves what a renamed game saved under its old slug (best score and its own
+ * `rocketgame:<slug>:…` keys) to the new slug, unless the new one has data.
+ */
+export function migrateRenamedGames(renamed: Readonly<Record<string, string>>) {
+  try {
+    const storage = window.localStorage;
+    for (const [from, to] of Object.entries(renamed)) {
+      const moves: [string, string][] = [[bestKey(from), bestKey(to)]];
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (key?.startsWith(`rocketgame:${from}:`)) {
+          moves.push([
+            key,
+            key.replace(`rocketgame:${from}:`, `rocketgame:${to}:`),
+          ]);
+        }
+      }
+      for (const [oldKey, newKey] of moves) {
+        const value = storage.getItem(oldKey);
+        if (value === null) continue;
+        if (storage.getItem(newKey) === null) storage.setItem(newKey, value);
+        storage.removeItem(oldKey);
+      }
+    }
+  } catch {
+    // Storage blocked: nothing to move.
+  }
+}
+
 // Settings
 
 export const SETTINGS_KEY = "rocketgame:settings";

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  migrateRenamedGames,
   parseSettings,
   readBest,
   readJSON,
@@ -88,5 +89,46 @@ describe("with working storage", () => {
       touchControls: true,
       vibration: true,
     });
+  });
+});
+
+describe("migrateRenamedGames", () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = new Map();
+    vi.stubGlobal("window", {
+      localStorage: {
+        get length() {
+          return store.size;
+        },
+        key: (i: number) => [...store.keys()][i] ?? null,
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => store.set(k, v),
+        removeItem: (k: string) => store.delete(k),
+      },
+    });
+  });
+
+  it("moves the best score and game settings to the new slug", () => {
+    store.set("rocketgame:best:old-game", "4");
+    store.set("rocketgame:old-game:difficulty", '"hard"');
+    store.set("rocketgame:best:snake", "9");
+    migrateRenamedGames({ "old-game": "new-game" });
+    expect(readBest("new-game")).toBe(4);
+    expect(readRaw("rocketgame:new-game:difficulty")).toBe('"hard"');
+    expect(readRaw("rocketgame:best:old-game")).toBeNull();
+    expect(readBest("snake")).toBe(9);
+  });
+
+  it("never overwrites what the new slug already has", () => {
+    store.set("rocketgame:best:old-game", "2");
+    store.set("rocketgame:best:new-game", "5");
+    migrateRenamedGames({ "old-game": "new-game" });
+    expect(readBest("new-game")).toBe(5);
+  });
+
+  it("does nothing when storage is blocked", () => {
+    vi.stubGlobal("window", {});
+    expect(() => migrateRenamedGames({ a: "b" })).not.toThrow();
   });
 });

@@ -1,5 +1,5 @@
 /**
- * Pure Comet Kick (penalty kick) rules. Goal coordinates: x from -1 (left
+ * Pure Nova Shootout (penalty kick) rules. Goal coordinates: x from -1 (left
  * post) to 1 (right post), y from 0 (ground) to 1 (crossbar).
  */
 

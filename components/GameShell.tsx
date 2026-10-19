@@ -61,6 +61,8 @@ type Props = {
   onAction?: (id: string, pressed: boolean) => void;
   /** Short message floating over the top of the board ("GOAL!", "You made 2048!"). */
   callout?: ReactNode;
+  /** Title art at the top of the Ready screen (e.g. a pixel-art logo). */
+  logo?: ReactNode;
   /** Shown under the board on the page only, e.g. an arrow pad. */
   below?: ReactNode;
   /** The board itself: fills a box of the given aspect ratio. */
@@ -109,6 +111,7 @@ export default function GameShell({
   onDirection,
   onAction,
   callout,
+  logo,
   below,
   children,
 }: Props) {
@@ -335,6 +338,7 @@ export default function GameShell({
                 >
                   {status === "ready" && (
                     <>
+                      {logo}
                       <h2
                         id="overlay-title"
                         className="font-display text-2xl font-semibold"

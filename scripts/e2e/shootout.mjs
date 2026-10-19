@@ -12,9 +12,15 @@ export default async function scenario(page) {
     page.eval(
       `[...document.querySelectorAll("dl > div")].find(d => d.querySelector("dt").textContent === ${JSON.stringify(label)})?.querySelector("dd").textContent`,
     );
-  const callout = () =>
+  // Hints and results are drawn in the canvas; the page mirrors the phase
+  // and the result message on its screen-reader status line.
+  const phase = () =>
     page.eval(
-      `document.querySelector(".game-board > div.pointer-events-none")?.textContent ?? ""`,
+      `document.querySelector("[data-game-message]")?.dataset.phase ?? ""`,
+    );
+  const message = () =>
+    page.eval(
+      `document.querySelector("[data-game-message]")?.textContent ?? ""`,
     );
   const clickWorld = async (x, y) => {
     const r = await page.eval(
@@ -37,7 +43,7 @@ export default async function scenario(page) {
   };
 
   await page.viewport(1280, 900);
-  await page.goto(BASE + "/games/comet-kick");
+  await page.goto(BASE + "/games/nova-shootout");
   assert((await overlay()) === "Ready?", "start screen");
   assert(
     await page.eval(`!!document.querySelector('[aria-label="Goalie level"]')`),
@@ -46,7 +52,7 @@ export default async function scenario(page) {
   await page.click('[aria-label="Goalie level"] button:nth-child(2)');
   assert(
     (await page.eval(
-      `localStorage.getItem("rocketgame:comet-kick:difficulty")`,
+      `localStorage.getItem("rocketgame:nova-shootout:difficulty")`,
     )) === '"medium"',
     "level saved",
   );
@@ -58,11 +64,11 @@ export default async function scenario(page) {
   )
     await page.sleep(100);
   await page.sleep(1200); // let the smooth scroll-into-view finish
-  for (let i = 0; i < 30 && !(await callout()).includes("Tap the goal"); i++)
+  for (let i = 0; i < 30 && (await phase()) !== "aim"; i++)
     await page.sleep(100);
   assert(
-    (await callout()).includes("Tap the goal"),
-    `aim hint: ${await callout()} overlay=${await overlay()} hidden=${await page.eval("document.hidden")}`,
+    (await phase()) === "aim",
+    `aiming: ${await phase()} overlay=${await overlay()} hidden=${await page.eval("document.hidden")}`,
   );
   await page.screenshot("kick-aim");
 
@@ -74,7 +80,7 @@ export default async function scenario(page) {
     [250, 285],
   ];
   const waitAim = async () => {
-    for (let i = 0; i < 60 && !(await callout()).includes("Tap the goal"); i++)
+    for (let i = 0; i < 60 && (await phase()) !== "aim"; i++)
       await page.sleep(100);
   };
   for (const [x, y] of aims) {
@@ -83,13 +89,13 @@ export default async function scenario(page) {
     await clickWorld(x, y);
     await page.sleep(80);
     assert(
-      (await callout()).includes("shoot"),
-      `power bar running (${await callout()} overlay=${await overlay()} hidden=${await page.eval("document.hidden")})`,
+      (await phase()) === "power",
+      `power bar running (${await phase()} overlay=${await overlay()} hidden=${await page.eval("document.hidden")})`,
     );
     await page.sleep(500); // power ≈ 0.6-0.7 on medium (1.45 s sweep)
     await clickWorld(360, 400);
-    await page.sleep(900);
-    messages.push(await callout());
+    await page.sleep(1100);
+    messages.push(await message());
     if (messages.length === 1) await page.screenshot("kick-result");
     await page.sleep(1300);
   }
@@ -111,16 +117,16 @@ export default async function scenario(page) {
     await page.key(" ");
     await page.sleep(520);
     await page.key(" ");
-    await page.sleep(900);
-    messages.push(await callout());
+    await page.sleep(1100);
+    messages.push(await message());
     await page.sleep(1300);
   }
   console.log("  results:", messages.join(" | "));
   assert(
     messages.every((m) => /GOAL|So close/.test(m)),
-    "each kick shows GOAL! or a friendly So close! message",
+    "each kick announces GOAL! or a friendly So close! message",
   );
-  for (let i = 0; i < 20 && (await overlay()) === null; i++)
+  for (let i = 0; i < 30 && (await overlay()) === null; i++)
     await page.sleep(200);
   const over = await overlay();
   assert(
@@ -130,7 +136,7 @@ export default async function scenario(page) {
   const goals = Number(await stat("Goals"));
   assert((await stat("Kicks")) === "5/5", "5/5 kicks");
   const best = await page.eval(
-    `localStorage.getItem("rocketgame:best:comet-kick")`,
+    `localStorage.getItem("rocketgame:best:nova-shootout")`,
   );
   assert(
     goals === 0 ? best === null || best === "0" : Number(best) === goals,

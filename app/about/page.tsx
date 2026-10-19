@@ -63,9 +63,10 @@ export default function AboutPage() {
           Credits
         </h2>
         <p className="text-muted">
-          All games are original. The rocket logo, the game pictures and the
-          sounds are made by us in code, and every character (like Bolt the
-          robot goalie) is made up. Other things we use:
+          All games are original. The rocket logo, the game pictures (pixel art
+          and its blocky letters too) and the sounds are made by us in code, and
+          every character (like Bolt the robot goalie) is made up. Other things
+          we use:
         </p>
         <ul className="list-disc space-y-1 pl-5 text-muted">
           <li>

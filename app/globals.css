@@ -258,6 +258,21 @@ html.fs-lock body {
     font-family: inherit;
     font-size: 0.85em;
   }
+  /* Hint box for the pixel-art games: hard edges and a drop shadow, like a 16-bit menu. */
+  .retro-callout {
+    display: inline-block;
+    border: 3px solid #e8ecff;
+    background: #140c2c;
+    box-shadow:
+      0 0 0 3px #140c2c,
+      4px 4px 0 3px #05030f;
+    padding: 0.2rem 0.7rem;
+    color: #ffd166;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
   .prose-game ul {
     list-style: disc;
     padding-left: 1.25rem;
