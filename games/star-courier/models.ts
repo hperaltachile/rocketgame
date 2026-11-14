@@ -460,6 +460,23 @@ export function makeFreighter(world: World): FreighterRig {
   return { root, warning };
 }
 
+/** The best-distance arch: two posts, a glowing beam and a waving flag. */
+export function makeBeacon(): Group {
+  const g = new Group();
+  const post = lambert("#e8edf7");
+  g.add(mesh(new CylinderGeometry(0.15, 0.2, 5, 6), post, -4.1, 2.5, 0));
+  g.add(mesh(new CylinderGeometry(0.15, 0.2, 5, 6), post, 4.1, 2.5, 0));
+  g.add(mesh(box(8.4, 0.3, 0.3), glow("#ffe066"), 0, 5, 0));
+  g.add(mesh(box(8.4, 0.9, 0.05), glow("#ffe066", 0.25), 0, 4.6, 0));
+  const flag = new Group();
+  flag.position.set(4.1, 5.2, 0);
+  flag.add(mesh(new CylinderGeometry(0.04, 0.04, 1.4, 4), post, 0, 0.7, 0));
+  flag.add(mesh(box(0.9, 0.55, 0.04), glow("#ff5e3a"), -0.45, 1.1, 0));
+  g.add(flag);
+  g.userData.flag = flag;
+  return g;
+}
+
 // Power-ups
 
 export function makePickup(kind: PowerUpKind): Group {

@@ -9,6 +9,26 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Star Courier missions, Hangar and records
+
+- **Features:**
+  - **Missions and Courier Rank:** sets of three missions (for example "Slide 20 times" or "Run 1,500 m in one run"). Finishing a set ranks you up: your score multiplier goes up by 1 for good, plus a stardust reward. Sets are the same for everyone and get bigger as you go. Freighter missions wait until freighters are common.
+  - **Daily Delivery 📦:** one bonus mission a day, picked from the date, worth ✦500.
+  - **The Hangar,** under the board, has four tabs:
+    - **Couriers:** unlock Zuri (✦1,500) and Bix (✦3,000), pick a suit (three colour suits each, ✦600), and choose a world or "Daily".
+    - **Upgrades:** five levels for each power-up, so it lasts longer; each level costs double the last.
+    - **Missions:** the current set and the Daily Delivery, with progress bars.
+    - **Records:** best distance and your top 5 runs.
+  - **Best-distance beacon:** a golden arch with a waving flag stands on the track at your best distance. Passing it says "New best distance! Keep going!".
+  - **Game over** lists missions done, rank ups, the Daily Delivery and new best distances.
+- **Changes:**
+  - Everything is saved in one key, `rocketgame:star-courier:save`. The save is checked and repaired on load (`parseSave`), so bad or edited values can't break the game. It replaces the separate courier and world keys from the first version, which was never released.
+  - Stardust from each run goes into the bank once, when the run ends.
+- **Tests:** `progress.test.ts` covers missions, rank ups, the daily mission, the shop and save repair. The browser test unlocks a courier, buys an upgrade and checks that the run is saved.
+- **Design decisions:**
+  - Everything is bought with stardust earned in the game. There's no real money, no ads and no continues.
+  - The Hangar sits under the board, not above it, so the whole board still fits on screen without scrolling.
+
 ## 2026-11-14: Star Courier, the first 3D game
 
 - **Feature: Star Courier 📦**, a 3D three-lane runner built with three.js.
@@ -36,7 +56,6 @@ PR numbers link to GitHub. Add an entry in the same PR as the change.
   - The game was asked for as a copy-style "train surfer" runner. We kept the genre and the engineering asks, but made the premise, chaser, power-ups and worlds original and space-themed. There's no roof running, hoverboard, jetpack, keys to continue or letter hunt.
   - There are no paid or currency continues: a run ends when it ends, which suits kids.
   - Bumping a crate, gate or crater is a stumble, not the end of the run, to keep it forgiving for kids. Only pods and freighters end a run head-on.
-  - Missions, the daily delivery, the Hangar shop and the top-5 table come in a follow-up PR.
 
 ## 2026-10-18: Arcade refresh: Rocket Run sectors, Nova Shootout, Cosmic Slam
 

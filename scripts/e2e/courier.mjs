@@ -25,14 +25,25 @@ export default async function scenario(page) {
       await page.sleep(100);
     await page.sleep(600);
   };
+  const fps = (ms = 1000) =>
+    page.eval(`new Promise((done) => { let n = 0; const t0 = performance.now();
+      const tick = () => { n++; if (performance.now() - t0 < ${ms}) requestAnimationFrame(tick); else done(n * 1000 / ${ms}); };
+      requestAnimationFrame(tick); })`);
+  // Headless Edge sometimes throttles the tab to a few frames a second (see
+  // CLAUDE.md, Gotchas); bringing it to the front restores full speed.
+  let lastCheck = 0;
+  const unthrottle = async () => {
+    if (Date.now() - lastCheck < 3000) return;
+    lastCheck = Date.now();
+    if ((await fps(250)) >= 20) return;
+    await page.send("Page.bringToFront");
+    await page.screenshot("courier-unthrottle");
+  };
   const resumeIfPaused = async () => {
     if ((await overlay()) === "Paused" && (await page.eval("document.hidden")))
       await page.click("[role=dialog] button.btn-primary");
+    await unthrottle();
   };
-  const fps = () =>
-    page.eval(`new Promise((done) => { let n = 0; const t0 = performance.now();
-      const tick = () => { n++; if (performance.now() - t0 < 1000) requestAnimationFrame(tick); else done(n); };
-      requestAnimationFrame(tick); })`);
 
   await page.viewport(1280, 900);
   await page.goto(BASE + "/games/star-courier");
@@ -45,15 +56,29 @@ export default async function scenario(page) {
     `performance.getEntriesByType("resource").some((r) => /three/i.test(r.name))`,
   );
   assert(!threeLoaded, "Three.js not downloaded before Start");
-  assert(await clickText("Bix"), "courier picker has Bix");
-  assert(await clickText("Ice Moon"), "world picker has Ice Moon");
-  const pressed = await page.eval(
-    `[...document.querySelectorAll("[aria-pressed=true]")].map((b) => b.textContent.trim())`,
+  // The Hangar: spend banked stardust on a courier and an upgrade.
+  const SAVE = "rocketgame:star-courier:save";
+  const readSave = () =>
+    page.eval(`JSON.parse(localStorage.getItem("${SAVE}") ?? "{}")`);
+  await page.eval(
+    `localStorage.setItem("${SAVE}", JSON.stringify({ bank: 5000 }))`,
   );
+  await page.goto(BASE + "/games/star-courier");
+  assert(await clickText("Unlock for ✦3,000"), "Bix can be unlocked");
+  let save = await readSave();
   assert(
-    pressed.some((t) => t.endsWith("Bix")) && pressed.includes("Ice Moon"),
-    `choices are remembered (${pressed.join(", ")})`,
+    save.bank === 2000 && save.owned.includes("bix") && save.courier === "bix",
+    `unlocking Bix spends 3,000 and picks him (bank ${save.bank})`,
   );
+  assert(await clickText("Ice Moon"), "world picker has Ice Moon");
+  assert(await clickText("Upgrades"), "Upgrades tab opens");
+  assert(await clickText("Upgrade ✦400"), "an upgrade can be bought");
+  save = await readSave();
+  assert(
+    save.world === "ice-moon" && save.bank === 1600,
+    `world and upgrade saved (bank ${save.bank})`,
+  );
+  await clickText("Couriers");
 
   await page.click("[role=dialog] button.btn-primary");
   await waitCanvas();
@@ -69,11 +94,16 @@ export default async function scenario(page) {
   console.log(`  frames per second in headless (software WebGL): ${frames}`);
 
   // Moves: none of these should scroll the page.
+  const scrollBefore = await page.eval("window.scrollY");
   for (const k of ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"]) {
     await page.key(k);
     await page.sleep(250);
   }
-  assert((await page.eval("window.scrollY")) === 0, "keys don't scroll");
+  const scrollAfter = await page.eval("window.scrollY");
+  assert(
+    scrollAfter === scrollBefore,
+    `keys don't scroll (${scrollBefore} → ${scrollAfter})`,
+  );
   await page.screenshot("courier-ice-bix");
 
   await page.key("Escape");
@@ -111,12 +141,17 @@ export default async function scenario(page) {
     `localStorage.getItem("rocketgame:best:star-courier")`,
   );
   assert(Number(best) > 0, `best score saved (${best})`);
+  save = await readSave();
+  assert(
+    save.top?.length === 1 && save.bank > 1600 && save.bestDistance > 0,
+    `run saved: top 5, stardust banked, best distance (bank ${save.bank}, ${save.bestDistance} m)`,
+  );
   await page.screenshot("courier-over");
 
   // Each world draws.
   for (const w of WORLDS) {
     await page.eval(
-      `localStorage.setItem("rocketgame:star-courier:world", ${JSON.stringify(JSON.stringify(w))})`,
+      `localStorage.setItem("${SAVE}", JSON.stringify({ ...JSON.parse(localStorage.getItem("${SAVE}")), world: ${JSON.stringify(w)} }))`,
     );
     await page.goto(BASE + "/games/star-courier");
     await page.click("[role=dialog] button.btn-primary");
