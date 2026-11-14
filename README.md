@@ -25,13 +25,14 @@ Every game has fullscreen, on-screen touch controls on phones, sound, pause, and
 _Last updated 2026-11-14._
 
 - **Live:** all 9 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel.
-- **Latest release** ([#15](https://github.com/hperaltachile/rocketgame/pull/15)): **Star Courier**, the first 3D game (three.js). Missions, a shop and records follow in [#16](https://github.com/hperaltachile/rocketgame/pull/16).
+- **Latest release:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
 - **Before that** ([#13](https://github.com/hperaltachile/rocketgame/pull/13)):
   - Rocket Run got progressive difficulty in sectors.
   - Comet Kick became **Nova Shootout** and Star Slugger became **Cosmic Slam**, both redrawn as retro pixel art.
   - Old links redirect, and saved scores carry over.
 - **Open follow-ups:**
   - Try Star Courier on a real phone (swipes, fullscreen, sound).
+  - `npm audit` still lists 8 moderate warnings in lint-only tooling (`minimatch` under `typescript-eslint`). Update `eslint-config-next` once a fixed `typescript-eslint` ships.
   - Test Nova Shootout and Cosmic Slam on a real iPhone (the WebKit e2e suite needs Playwright, which isn't installed).
   - Old links take two redirects (`/games/comet-kick` → `/games/nova-shootout/` → `/games/nova-shootout`); make it one.
   - Vercel Web Analytics is set up but had recorded no page views as of 2026-10-18. Confirm it counts a real visit.
