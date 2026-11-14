@@ -123,6 +123,7 @@ export default function Minesweeper() {
         )
       }
       isNewBest={isNewBest}
+      leaderboardScore={status === "over" && won ? seconds : null}
       touch={touch}
       onAction={(id, pressed) => {
         if (id === "flag" && pressed) setFlagMode((on) => !on);

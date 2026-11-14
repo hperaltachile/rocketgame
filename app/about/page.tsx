@@ -52,6 +52,12 @@ export default function AboutPage() {
             for your name or email.
           </li>
           <li>
+            If you make a Top 10, you can save your score with a space name you
+            build from our word lists, like &ldquo;Cosmic Fox 42&rdquo;. We keep
+            only that name and your score. You can&apos;t type your own words,
+            so nobody sees real names or anything unkind.
+          </li>
+          <li>
             We only count visits to the site, with no cookies and nothing that
             tells us who you are.
           </li>
