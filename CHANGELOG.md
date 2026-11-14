@@ -9,6 +9,18 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Hide & Seek: more houses, smoother Peeka
+
+- **Feature: three houses** (`lib/games/hide-and-seek/houses.ts`):
+  - **Moonbase House** (the original), **Greenhouse Dome** (a ring hall around a grassy greenhouse, with a moon rover, a blanket fort, beanbags and a bunk bed to hide in) and **Star Tower** (rooms on both sides of one long hall).
+  - Each round is in the next house, round after round. A picker above the game chooses the house to start in (saved in `rocketgame:hide-and-seek:start`), and the round banner names the house.
+  - Peeka's memory of your favourite spots is kept by kind of hiding spot (wardrobe, bed, plant...), so it carries over from house to house.
+  - New furniture art: rover, planter, hedge, bunk bed, blanket fort, beanbags, arcade cabinet, curtain, and a grass floor.
+- **Change: Peeka walks smoothly.** It used to walk from tile centre to tile centre, in grid-shaped zigzags. Now it skips ahead to any path point it can reach in a straight line without its body touching a wall or furniture (`clearLine` in `nav.ts`), so it cuts across open rooms and rounds corners. It still pauses at some doorways while patrolling.
+- **Tests:**
+  - Every house test runs for every house, plus balance tests per house, a check that Peeka never clips anything while walking smoothly, and that it walks a shorter distance than the tile path.
+  - `hide.mjs` checks the house picker.
+
 ## 2026-11-14: Hide & Seek: Mazes
 
 - **Feature: a new game, Hide & Seek: Mazes** (`/games/hide-and-seek`): a top-down stealth game in a cozy moonbase house.
@@ -33,15 +45,8 @@ PR numbers link to GitHub. Add an entry in the same PR as the change.
   - The brief's "cozy house" became a moonbase home, to keep the space theme.
   - A streak of rounds instead of single rounds, so the Top 10 compares something meaningful and the game "gets smarter".
   - Volume uses the site-wide sound on/off switch, as in every other game. Separate music and effects volume is a follow-up.
-- **Feature: three houses** (`lib/games/hide-and-seek/houses.ts`), added after the first playtest:
-  - **Moonbase House** (the original), **Greenhouse Dome** (a ring hall around a grassy greenhouse, with a moon rover, a blanket fort, beanbags and a bunk bed to hide in) and **Star Tower** (rooms on both sides of one long hall).
-  - Each round is in the next house, round after round. A picker above the game chooses the house to start in (saved in `rocketgame:hide-and-seek:start`), and the round banner names the house.
-  - Peeka's memory of your favourite spots is kept by kind of hiding spot (wardrobe, bed, plant...), so it carries over from house to house.
-  - New furniture art: rover, planter, hedge, bunk bed, blanket fort, beanbags, arcade cabinet, curtain, and a grass floor.
-- **Change: Peeka walks smoothly.** It used to walk from tile centre to tile centre, in grid-shaped zigzags. Now it skips ahead to any path point it can reach in a straight line without its body touching a wall or furniture (`clearLine` in `nav.ts`), so it cuts across open rooms and rounds corners. It still pauses at some doorways while patrolling.
 - **Pixel font:** added `&` and `,`.
 - **Tests:**
-  - Every house test runs for every house, plus balance tests per house, a check that Peeka never clips anything while walking smoothly, and that it walks a shorter distance than the tile path.
   - Unit tests for the house (walled in, all floor reachable, every spot reachable, two exits per room), paths, line of sight, movement and collision, hiding, fairness (a hidden player is only ever found by opening their spot), hearing, the chase, memory, round timing and reset, and the difficulty curve.
   - Balance tests with two hider bots (`autopilot.ts`): a "camper" that never moves wins under 35% of first rounds, a "smart" bot that moves to checked spots wins 65%+ (about 71% now), and the smart bot's win rate drops by round 6.
   - New browser suite `scripts/e2e/hide.mjs`, plus the game in `fullscreen.mjs` and `webkit.mjs`. Home page JS is 147 KB gzipped, still under the 150 KB budget.

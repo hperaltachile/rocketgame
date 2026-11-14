@@ -26,7 +26,7 @@ Every game has fullscreen, on-screen touch controls on phones, sound, pause, and
 
 _Last updated 2026-11-14._
 
-- **Live:** 10 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel. **Hide & Seek: Mazes** (the 11th) is in review on branch `feat/hide-and-seek`.
+- **Live:** 11 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel. Hide & Seek: Mazes' three houses and smoother seeker are in review on branch `feat/hide-and-seek-houses`.
 - **Latest release:** **Leaderboards**, a shared Top 10 for every game except Tic-Tac-Toe, on Neon Postgres. Space names are built from word lists, so there's no typing ([#21](https://github.com/hperaltachile/rocketgame/pull/21)).
 - **Before that:** **Astro Hop**, a retro platformer with three worlds: Clover Plains, Crystal Caves and Sky Bridges ([#19](https://github.com/hperaltachile/rocketgame/pull/19)).
 - **Also:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
