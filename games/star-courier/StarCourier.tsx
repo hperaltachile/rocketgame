@@ -9,30 +9,29 @@ import {
 } from "@/components/hooks";
 import ThreeGame from "@/components/ThreeGame";
 import { SECTORS } from "@/lib/games/star-courier/chunks";
-import {
-  COURIERS,
-  getCourier,
-  type CourierId,
-} from "@/lib/games/star-courier/couriers";
+import { getCourier } from "@/lib/games/star-courier/couriers";
 import type { Action } from "@/lib/games/star-courier/logic";
 import {
-  WORLDS,
-  getWorld,
-  worldOfTheDay,
-} from "@/lib/games/star-courier/worlds";
+  SAVE_KEY,
+  applyRun,
+  dayKey,
+  parseSave,
+  rankMultiplier,
+  type Save,
+} from "@/lib/games/star-courier/progress";
+import { getWorld, worldOfTheDay } from "@/lib/games/star-courier/worlds";
 import { KEY_DIRECTIONS, type Direction } from "@/lib/input";
 import { writeJSON } from "@/lib/storage";
 import PixelLogo from "../shared/PixelLogo";
 import Stage from "../shared/Stage";
 import { usePhaserShell } from "../shared/usePhaserShell";
 import type { CourierCommand, CourierState } from "./createGame";
+import Hangar from "./Hangar";
 import Hud from "./Hud";
 
 // Three.js is only downloaded when this import runs (first Start).
 const load = () => import("./createGame").then((m) => m.createGame);
 
-const COURIER_KEY = "rocketgame:star-courier:courier";
-const WORLD_KEY = "rocketgame:star-courier:world";
 const SWIPE_MIN_PX = 24;
 const TOUCH = { pad: true };
 
@@ -43,23 +42,19 @@ const ACTIONS: Record<Direction, Action> = {
   right: "right",
 };
 
-function parseId(raw: string | null): string | null {
-  try {
-    const value: unknown = raw === null ? null : JSON.parse(raw);
-    return typeof value === "string" ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 export default function StarCourier() {
   const { bridge, state, status, loaded, shellProps } = usePhaserShell<
     Exclude<CourierCommand, { type: "start" | "pause" | "resume" }>,
     CourierState
   >("star-courier");
-  const courier = getCourier(parseId(useStoredRaw(COURIER_KEY)));
-  const savedWorld = parseId(useStoredRaw(WORLD_KEY));
-  const world = savedWorld ? getWorld(savedWorld) : worldOfTheDay(new Date());
+  const save = parseSave(useStoredRaw(SAVE_KEY));
+  const courier = getCourier(save.courier);
+  const today = dayKey(new Date());
+  const world = save.world ? getWorld(save.world) : worldOfTheDay(new Date());
+  const setSave = (next: Save) => writeJSON(SAVE_KEY, next);
+  /** Each run is added to the save once, when it ends. */
+  const runId = useRef(0);
+  const savedRun = useRef(0);
   const coarse = useCoarsePointer();
   const portrait = usePortrait();
   const tall = coarse && portrait;
@@ -67,7 +62,18 @@ export default function StarCourier() {
   const lastPad = useRef<Direction | null>(null);
 
   const start = () => {
-    bridge.send({ type: "setup", world: world.id, courier: courier.id });
+    bridge.send({
+      type: "setup",
+      world: world.id,
+      courier: courier.id,
+      suit: save.wearing[courier.id],
+      options: {
+        multiplier: rankMultiplier(save.rank),
+        upgrades: save.upgrades,
+      },
+      bestDistance: save.bestDistance,
+    });
+    runId.current++;
     shellProps.onStart();
   };
 
@@ -91,6 +97,22 @@ export default function StarCourier() {
       move("up");
     }
   });
+
+  // When a run ends, bank its stardust and move missions and records along.
+  const saveRun = useEffectEvent(() => {
+    if (!state || savedRun.current === runId.current) return;
+    savedRun.current = runId.current;
+    setSave(
+      applyRun(
+        save,
+        { ...state.stats, distance: state.distance, score: state.score },
+        today,
+      ),
+    );
+  });
+  useEffect(() => {
+    if (status === "over") saveRun();
+  }, [status]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => onKeyDown(event);
@@ -147,51 +169,33 @@ export default function StarCourier() {
       }
       overTitle={phase === "crash" ? "Bonk! 💫" : "Gooped! 🟢"}
       overMessage={
-        <p>
-          You ran {distance.toLocaleString("en-US")} m, reached{" "}
-          {SECTORS[sector].name
-            .toLowerCase()
-            .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
-          and collected {stardust.toLocaleString("en-US")} stardust.
-        </p>
+        <>
+          <p>
+            You ran {distance.toLocaleString("en-US")} m, reached{" "}
+            {SECTORS[sector].name
+              .toLowerCase()
+              .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
+            and collected {stardust.toLocaleString("en-US")} stardust.
+          </p>
+          {save.last && save.last.distance === distance && (
+            <ul className="mt-2 space-y-0.5 text-sm">
+              {save.last.missionsDone.map((m) => (
+                <li key={m}>✅ Mission done: {m}</li>
+              ))}
+              {save.last.rankUp && (
+                <li className="font-semibold text-accent">
+                  ⭐ Rank up! Your score multiplier is now ×
+                  {rankMultiplier(save.rank)}.
+                </li>
+              )}
+              {save.last.dailyDone && <li>📦 Daily Delivery done!</li>}
+              {save.last.newBestDistance && <li>🏁 New best distance!</li>}
+            </ul>
+          )}
+        </>
       }
-      controls={
-        <div className="flex flex-col gap-3">
-          <div
-            role="group"
-            aria-label="Courier"
-            className="flex flex-wrap gap-2"
-          >
-            {COURIERS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                aria-pressed={courier.id === c.id}
-                title={c.blurb}
-                className={
-                  courier.id === c.id ? "btn-primary" : "btn-secondary"
-                }
-                onClick={() => writeJSON(COURIER_KEY, c.id satisfies CourierId)}
-              >
-                <span aria-hidden="true">{c.icon}</span> {c.name}
-              </button>
-            ))}
-          </div>
-          <div role="group" aria-label="World" className="flex flex-wrap gap-2">
-            {WORLDS.map((w) => (
-              <button
-                key={w.id}
-                type="button"
-                aria-pressed={world.id === w.id}
-                title={w.blurb}
-                className={world.id === w.id ? "btn-primary" : "btn-secondary"}
-                onClick={() => writeJSON(WORLD_KEY, w.id)}
-              >
-                {w.name}
-              </button>
-            ))}
-          </div>
-        </div>
+      below={
+        <Hangar save={save} world={world} today={today} onChange={setSave} />
       }
       howToPlay={
         <ul>

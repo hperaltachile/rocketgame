@@ -67,8 +67,8 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `games/<slug>/` | The page component, plus `scenes.ts` and `createGame.ts` for Phaser games. |
 | `lib/storage.ts` | localStorage that never throws: best scores (`rocketgame:best:<slug>`) and settings (`rocketgame:settings`: sound, touchControls, vibration). `migrateRenamedGames` moves saved data of renamed games. |
 | `lib/games/rocket-run/autopilot.ts` | Test-only autopilot that flies whole runs through `stepRun`; the difficulty-curve tests use it. |
-| `lib/games/star-courier/` | Star Courier rules: `config.ts` (every tuning number), `chunks.ts` (hand-made track pieces, sectors, `routeExists`), `logic.ts` (`newRun`/`stepRun`), `worlds.ts` (one entry per world), `couriers.ts`, and a test-only `autopilot.ts`. |
-| `games/star-courier/` | The three.js side: `createGame.ts` (loop, pooling, events → sounds and effects), `models.ts` (every 3D model, built from simple shapes), `world.ts` (sky, fog, track, skyline from a `worlds.ts` entry), `effects.ts` (particles, shake), `names.ts` (power-up names and colours without three.js), `Hud.tsx` and the page `StarCourier.tsx`. |
+| `lib/games/star-courier/` | Star Courier rules: `config.ts` (every tuning number), `chunks.ts` (hand-made track pieces, sectors, `routeExists`), `logic.ts` (`newRun`/`stepRun`), `worlds.ts` (one entry per world), `couriers.ts` (couriers, suits, prices), `progress.ts` (the save, missions, rank, Daily Delivery, shop) and a test-only `autopilot.ts`. |
+| `games/star-courier/` | The three.js side: `createGame.ts` (loop, pooling, events → sounds and effects), `models.ts` (every 3D model, built from simple shapes), `world.ts` (sky, fog, track, skyline from a `worlds.ts` entry), `effects.ts` (particles, shake), `names.ts` (power-up names and colours without three.js), `Hud.tsx`, `Hangar.tsx` (shop, missions, records) and the page `StarCourier.tsx`. |
 | `games/shared/music.ts` | Tiny looping chiptune player (melody + bass from a tempo, scale and note steps). |
 
 **GameShell** handles, for every game:
@@ -124,6 +124,11 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
   3. Run `npm test`. The autopilot tests check that 90%+ of runs clear sector 1, the median run is 40–150 s, and crashes per km rise from sectors 0–2 to 3–4 to Deep Orbit. Every chunk must pass `routeExists` from every lane.
 - **Chunk rules:** all lanes open at both ends, and never all three blocked at once. Leave 10 m or more between jumps or slides in a lane. A row needing two lane changes needs room before it: rows that block two lanes start at 14 m or later.
 - **The autopilot** (`autopilot.ts`) is a stand-in for a decent kid: it reacts about 0.4 s late, sees pods ~1.1 s ahead and small things ~0.9 s ahead, and plans lane routes with the same idea as `routeExists`. If you change it, re-check the curve; small changes to its lookahead swing the results a lot.
+- **Progress and the shop** live in `lib/games/star-courier/progress.ts`, saved as one JSON value under `rocketgame:star-courier:save`:
+  - `parseSave` repairs anything odd (unknown couriers, negative bank, levels past the cap). Add a field to `Save`, `newSave` and `parseSave` together, and to the round-trip test.
+  - `applyRun` is pure. The page calls it once per run, when the status turns `over`, guarded by a run counter.
+  - Missions come from `TEMPLATES`, picked with a seed per set, so everyone gets the same sets. Prices (`price` in `couriers.ts`, `SUIT_PRICE`, `upgradePrice`) and rewards (`setReward`, `DAILY_REWARD`) are all in those two files.
+  - Stardust is earned in the game only. No real money, ads or continues.
 
 ## Design rules (agreed with the owner)
 
@@ -186,4 +191,5 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **three.js: anything further away than the fog far distance turns into fog colour.** Sky objects (planet, ring, stars) need their own materials with `fog: false`.
 - **Don't import values from `createGame.ts` or `models.ts` into the page.** That pulls three.js into the page bundle, before Start. Shared names and colours live in `games/star-courier/names.ts`; type-only imports are fine.
 - **The chaser can block the camera.** Gloop sits between the camera and the courier, so it's scaled down, trails between lanes a little slowly, and its eyes are on stalks so it reads from behind.
+- **Tall page extras go in GameShell's `below` slot, not `controls`.** `controls` sits above the board, and a big panel there (like Star Courier's Hangar) pushes the board off screen; the `fullscreen` suite's "whole board visible" check catches it.
 - **Pixel textures need `setFilter(NEAREST)`** (`addTexture` does it). Draw shapes with the `Pixels` methods, pixel by pixel; canvas paths get anti-aliased edges.
