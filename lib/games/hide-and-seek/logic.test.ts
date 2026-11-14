@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import { seeded } from "../rng";
 import { playBot } from "./autopilot";
 import { PLAYER, ROUND, seekerTuning, STEP, TILE } from "./config";
-import { PLAYER_START } from "./house";
+import { HOUSES } from "./houses";
 import {
   exitRisk,
   nearSpot,
   newGame,
+  nextRound,
   NO_INPUT,
   resetRound,
+  roomWaypoint,
   spotById,
   spotStatus,
   step,
@@ -16,7 +18,8 @@ import {
   type GameEvent,
   type Input,
 } from "./logic";
-import { centerOf, isSolid, tileOf, type Tile } from "./nav";
+import { centerOf, findPath, isSolid, tileOf, type Tile } from "./nav";
+import { SEEKER } from "./config";
 
 const run = (game: Game, seconds: number, input: Input = NO_INPUT) => {
   const events: GameEvent[] = [];
@@ -59,7 +62,7 @@ describe("movement", () => {
   it("walks diagonally no faster than straight", () => {
     const a = newGame(seeded(1));
     const b = newGame(seeded(1));
-    const start = centerOf(PLAYER_START);
+    const start = centerOf(HOUSES[0].playerStart);
     run(a, 0.5, { x: 1, y: 0, run: false });
     run(b, 0.5, { x: 1, y: -1, run: false });
     const straight = a.player.x - start.x;
@@ -178,20 +181,63 @@ describe("Peeka plays fair", () => {
     }
   });
 
-  it("never walks through walls or furniture", () => {
-    for (const seed of [11, 21, 31]) {
-      const game = newGame(seeded(seed));
-      place(game, spotById(game, "plant").approach);
-      step(game, NO_INPUT, true);
-      for (let i = 0; i < (ROUND.headStart + ROUND.duration) * 60; i++) {
-        step(game, NO_INPUT);
-        game.events.length = 0;
-        expect(
-          isSolid(game.grid, ...tileOf(game.seeker.x, game.seeker.y)),
-        ).toBe(false);
-        if (game.phase !== "play" && game.phase !== "countdown") break;
+  it.each(HOUSES.map((h, i) => [h.name, i] as const))(
+    "never walks through walls or furniture, even cutting corners (%s)",
+    (_name, house) => {
+      for (const seed of [11, 21, 31]) {
+        const game = newGame(seeded(seed), house);
+        place(
+          game,
+          spotById(game, game.grid.spots[seed % game.grid.spots.length].id)
+            .approach,
+        );
+        step(game, NO_INPUT, true);
+        const r = SEEKER.radius - 0.01;
+        for (let i = 0; i < (ROUND.headStart + ROUND.duration) * 60; i++) {
+          step(game, NO_INPUT);
+          game.events.length = 0;
+          const s = game.seeker;
+          for (const [x, y] of [
+            [s.x - r, s.y - r],
+            [s.x + r, s.y - r],
+            [s.x - r, s.y + r],
+            [s.x + r, s.y + r],
+          ]) {
+            expect(isSolid(game.grid, ...tileOf(x, y))).toBe(false);
+          }
+          if (game.phase !== "play" && game.phase !== "countdown") break;
+        }
       }
+    },
+  );
+
+  it("cuts across open floor instead of walking tile by tile", () => {
+    const game = newGame(seeded(5));
+    skipCountdown(game);
+    const s = game.seeker;
+    // Send Peeka from the hall to the middle of the living room.
+    s.mode = "patrol";
+    s.room = "living";
+    s.path = [];
+    const target = roomWaypoint(game, "living");
+    const tiles = findPath(game.grid, tileOf(s.x, s.y), target)!;
+    let tileLength = 0;
+    let at = centerOf(tileOf(s.x, s.y));
+    for (const t of tiles) {
+      const c = centerOf(t);
+      tileLength += Math.hypot(c.x - at.x, c.y - at.y);
+      at = c;
     }
+    let walked = 0;
+    let prev = { x: s.x, y: s.y };
+    for (let i = 0; i < 60 * 10 && s.look === 0; i++) {
+      step(game, NO_INPUT);
+      game.events.length = 0;
+      walked += Math.hypot(s.x - prev.x, s.y - prev.y);
+      prev = { x: s.x, y: s.y };
+    }
+    expect(s.look).toBeGreaterThan(0); // arrived and looking around
+    expect(walked).toBeLessThan(tileLength - 4);
   });
 
   it("hears running, gets suspicious and investigates", () => {
@@ -327,27 +373,56 @@ describe("round flow", () => {
   });
 });
 
-describe("balance (autopilot)", () => {
-  const rate = (bot: "camper" | "smart", roundsWon: number, n = 60) => {
-    let won = 0;
-    for (let i = 0; i < n; i++) {
-      const game = newGame(seeded(i * 7 + 3));
-      game.roundsWon = roundsWon;
-      resetRound(game);
-      playBot(game, bot, roundsWon + 1);
-      if (game.roundsWon > roundsWon) won++;
+describe.each(HOUSES.map((h, i) => [h.name, i] as const))(
+  "balance in %s (autopilot)",
+  (_name, house) => {
+    const rate = (bot: "camper" | "smart", roundsWon: number, n = 60) => {
+      let won = 0;
+      for (let i = 0; i < n; i++) {
+        const game = newGame(seeded(i * 7 + 3), house);
+        game.roundsWon = roundsWon;
+        resetRound(game);
+        playBot(game, bot, roundsWon + 1);
+        if (game.roundsWon > roundsWon) won++;
+      }
+      return won / n;
+    };
+
+    it("doesn't let you just wait in the first spot every round", () => {
+      expect(rate("camper", 0)).toBeLessThan(0.35);
+    }, 60_000);
+
+    it("rewards smart moves in round 1, and gets harder later", () => {
+      const first = rate("smart", 0);
+      const later = rate("smart", 5);
+      expect(first).toBeGreaterThanOrEqual(0.65);
+      expect(later).toBeLessThan(first - 0.15);
+    }, 120_000);
+  },
+);
+
+describe("houses in a row", () => {
+  it("plays each round in the next house, starting from the one picked", () => {
+    const game = newGame(seeded(1), 1);
+    expect(game.grid.house.id).toBe(HOUSES[1].id);
+    for (let round = 2; round <= HOUSES.length + 1; round++) {
+      game.round = round - 1;
+      nextRound(game);
+      expect(game.round).toBe(round);
+      expect(game.grid.house.id).toBe(HOUSES[round % HOUSES.length].id);
+      const start = centerOf(game.grid.house.playerStart);
+      expect([game.player.x, game.player.y]).toEqual([start.x, start.y]);
     }
-    return won / n;
-  };
+  });
 
-  it("doesn't let you just wait in the first spot every round", () => {
-    expect(rate("camper", 0)).toBeLessThan(0.35);
-  }, 60_000);
-
-  it("rewards smart moves in round 1, and gets harder later", () => {
-    const first = rate("smart", 0);
-    const later = rate("smart", 5);
-    expect(first).toBeGreaterThanOrEqual(0.65);
-    expect(later).toBeLessThan(first - 0.15);
-  }, 120_000);
+  it("remembers hiding habits by kind of furniture, across houses", () => {
+    const game = newGame(seeded(2));
+    place(game, spotById(game, "wardrobe").approach);
+    step(game, NO_INPUT, true);
+    expect(game.hideCounts.wardrobe).toBe(1);
+    game.round = 2; // round 3 is the Star Tower, which has a wardrobe too
+    nextRound(game);
+    expect(game.grid.house.id).toBe("tower");
+    expect(game.hideCounts.wardrobe).toBe(1);
+  });
 });

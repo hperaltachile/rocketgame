@@ -63,7 +63,7 @@ const SEEKER_CURVE = {
   /** Seconds spent opening and checking one hiding spot. */
   inspect: { base: 1.1, cap: 0.8 },
   /** Chance-weight multiplier for checking each spot in a room (× its suspicion). */
-  thorough: { base: 0.72, cap: 1.05 },
+  thorough: { base: 0.76, cap: 1.05 },
   /** Seconds a checked spot stays "remembered" (shorter = rechecks sooner). */
   memory: { base: 42, cap: 24 },
   /** Hearing range multiplier. */

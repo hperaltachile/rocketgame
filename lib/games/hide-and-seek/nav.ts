@@ -4,19 +4,14 @@
  */
 
 import { TILE } from "./config";
-import {
-  COLS,
-  FURNITURE,
-  MAP,
-  ROWS,
-  roomAt,
-  type Furniture,
-  type SpotInfo,
-} from "./house";
+import { roomAt, type HouseDef, type SpotInfo } from "./house";
+import { HOUSES } from "./houses";
 
 export type Tile = [number, number];
+export type Point = { x: number; y: number };
 
 export type Grid = {
+  house: HouseDef;
   cols: number;
   rows: number;
   /** 1 = can't walk here (walls, windows, furniture). */
@@ -25,15 +20,13 @@ export type Grid = {
   opaque: Uint8Array;
   /** 1 = doorway. */
   door: Uint8Array;
-  /** Which furniture covers each tile (index into FURNITURE), or -1. */
+  /** Which furniture covers each tile (index into house.furniture), or -1. */
   furniture: Int16Array;
   spots: SpotInfo[];
 };
 
-export function buildGrid(
-  map: readonly string[] = MAP,
-  furniture: readonly Furniture[] = FURNITURE,
-): Grid {
+export function buildGrid(house: HouseDef): Grid {
+  const { map, furniture } = house;
   const cols = map[0].length;
   const rows = map.length;
   const solid = new Uint8Array(cols * rows);
@@ -66,13 +59,26 @@ export function buildGrid(
       spots.push({
         ...item.spot,
         furniture: item,
-        room: roomAt(item.col, item.row).id,
+        room: roomAt(house, item.col, item.row).id,
         x: (item.col + item.w / 2) * TILE,
         y: (item.row + item.h / 2) * TILE,
       });
     }
   });
-  return { cols, rows, solid, opaque, door, furniture: owner, spots };
+  return { house, cols, rows, solid, opaque, door, furniture: owner, spots };
+}
+
+const grids = new Map<number, Grid>();
+
+/** The (cached) grid of house number `index`, wrapping around the list. */
+export function gridFor(index: number): Grid {
+  const i = ((index % HOUSES.length) + HOUSES.length) % HOUSES.length;
+  let grid = grids.get(i);
+  if (!grid) {
+    grid = buildGrid(HOUSES[i]);
+    grids.set(i, grid);
+  }
+  return grid;
 }
 
 export const inside = (g: Grid, c: number, r: number) =>
@@ -92,7 +98,7 @@ export const tileOf = (x: number, y: number): Tile => [
   Math.floor(y / TILE),
 ];
 
-export const centerOf = ([c, r]: Tile) => ({
+export const centerOf = ([c, r]: Tile): Point => ({
   x: (c + 0.5) * TILE,
   y: (r + 0.5) * TILE,
 });
@@ -249,4 +255,35 @@ export function visionPolygon(
   return points;
 }
 
-export { COLS, ROWS };
+/**
+ * Whether a body of the given radius can walk in a straight line between two
+ * points without touching anything solid (Peeka uses it to cut corners
+ * smoothly instead of walking tile by tile).
+ */
+export function clearLine(
+  g: Grid,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  radius: number,
+): boolean {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  // Fine steps: a coarse one could skip over the very tip of a corner.
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.5));
+  for (let i = 0; i <= steps; i++) {
+    const x = x0 + (dx * i) / steps;
+    const y = y0 + (dy * i) / steps;
+    for (const [ox, oy] of [
+      [-radius, -radius],
+      [radius, -radius],
+      [-radius, radius],
+      [radius, radius],
+    ]) {
+      const [c, r] = tileOf(x + ox, y + oy);
+      if (isSolid(g, c, r)) return false;
+    }
+  }
+  return true;
+}

@@ -13,12 +13,13 @@ import {
   STEP,
   TILE,
 } from "./config";
-import { roomAt } from "./house";
-import { centerOf, isSolid, tileOf } from "./nav";
+import { centerOf, isSolid } from "./nav";
 import { hearNoise, startSeeking, updateSeeker } from "./seeker";
 import {
   emit,
   exposed,
+  habitKey,
+  roomNameAt,
   inView,
   remembered,
   resetRound,
@@ -195,7 +196,8 @@ function enterSpot(game: Game, id: string) {
   const p = game.player;
   p.trans = { kind: "enter", spot: id, t: 0 };
   p.moving = false;
-  game.hideCounts[id] = (game.hideCounts[id] ?? 0) + 1;
+  const habit = habitKey(game, id);
+  game.hideCounts[habit] = (game.hideCounts[habit] ?? 0) + 1;
   emit(game, { type: "hide", spot: id });
   hearNoise(game, p.x, p.y, PLAYER.creakNoise, "creak");
 }
@@ -285,7 +287,7 @@ export function exitRisk(game: Game): boolean {
 /** Name of the room the player is in. */
 export function playerRoom(game: Game): string {
   const p = game.player;
-  return roomAt(...tileOf(p.x, p.y)).name;
+  return roomNameAt(game, p.x, p.y);
 }
 
 /** A short status line about Peeka, shown on screen and read to screen readers. */
@@ -307,7 +309,7 @@ export function statusText(game: Game): string {
       ? "Peeka heard something!"
       : "Peeka thinks it saw something…";
   if (s.inspecting) {
-    const room = roomAt(...tileOf(s.x, s.y)).name;
+    const room = roomNameAt(game, s.x, s.y);
     return `Peeka is checking the ${spotById(game, s.inspecting.spot).name.replace(/^(Under|Behind) the /, "")} in the ${room}.`;
   }
   if (s.mode === "investigate") return "Peeka is looking into it…";

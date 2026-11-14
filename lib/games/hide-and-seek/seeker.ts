@@ -5,9 +5,9 @@
  */
 
 import { SEEKER, TILE } from "./config";
-import { roomAt } from "./house";
 import {
   centerOf,
+  clearLine,
   distanceField,
   findPath,
   isDoor,
@@ -19,11 +19,13 @@ import {
 import {
   angleDiff,
   catchPlayer,
+  habitKey,
   emit,
   exposed,
   inView,
   patrolLap,
   remembered,
+  roomNameAt,
   roomWaypoint,
   spotById,
   type Game,
@@ -77,7 +79,7 @@ function playerIn(game: Game, spot: string) {
 
 const spotWeight = (game: Game, id: string) =>
   spotById(game, id).suspicion *
-  (1 + game.tuning.learning * (game.hideCounts[id] ?? 0));
+  (1 + game.tuning.learning * (game.hideCounts[habitKey(game, id)] ?? 0));
 
 /** Which spots of a room Peeka decides to open, most likely first. */
 export function roomSearch(game: Game, room: string): string[] {
@@ -121,12 +123,30 @@ function turnToward(game: Game, target: number, dt: number) {
   s.angle += Math.max(-max, Math.min(max, d));
 }
 
+/** Peeka's body, with a little margin, for cutting corners safely. */
+const BODY = SEEKER.radius + 1;
+
+/**
+ * Drops waypoints Peeka can already walk to in a straight line, so it cuts
+ * across rooms smoothly instead of stepping from tile centre to tile centre.
+ * The last point (where it's going) always stays.
+ */
+function smoothPath(game: Game) {
+  const s = game.seeker;
+  while (
+    s.path.length >= 2 &&
+    clearLine(game.grid, s.x, s.y, s.path[1].x, s.path[1].y, BODY)
+  )
+    s.path.shift();
+}
+
 /** Walks along the path. Returns true when it's done (or empty). */
 function follow(game: Game, speed: number, dt: number): boolean {
   const s = game.seeker;
   let budget = speed * dt;
+  smoothPath(game);
   while (budget > 0 && s.path.length > 0) {
-    const target = centerOf(s.path[0]);
+    const target = s.path[0];
     const dx = target.x - s.x;
     const dy = target.y - s.y;
     const d = Math.hypot(dx, dy);
@@ -135,22 +155,26 @@ function follow(game: Game, speed: number, dt: number): boolean {
       s.x = target.x;
       s.y = target.y;
       budget -= d;
-      const reached = s.path.shift()!;
-      if (
-        s.mode === "patrol" &&
-        isDoor(game.grid, reached[0], reached[1]) &&
-        s.path.length > 0 &&
-        !isDoor(game.grid, s.path[0][0], s.path[0][1]) &&
-        game.rng() < 0.5
-      ) {
-        s.wait = SEEKER.doorPause;
-        break;
-      }
+      s.path.shift();
+      smoothPath(game);
     } else {
       s.x += (dx / d) * budget;
       s.y += (dy / d) * budget;
       budget = 0;
     }
+  }
+  // Sometimes pause for a look when stepping into a doorway.
+  const [tc, tr] = tileOf(s.x, s.y);
+  const key = `${tc},${tr}`;
+  if (key !== s.tile) {
+    s.tile = key;
+    if (
+      s.mode === "patrol" &&
+      s.path.length > 0 &&
+      isDoor(game.grid, tc, tr) &&
+      game.rng() < 0.5
+    )
+      s.wait = SEEKER.doorPause;
   }
   if (s.path.length > 0 || budget < speed * dt) {
     s.stepT += dt;
@@ -166,12 +190,18 @@ function follow(game: Game, speed: number, dt: number): boolean {
 function goTo(game: Game, tile: Tile): boolean {
   const s = game.seeker;
   const here = tileOf(s.x, s.y);
-  const path = findPath(game.grid, here, tile);
-  if (!path) return false;
-  // Step back onto the centre of the current tile first, if off it.
+  const tiles = findPath(game.grid, here, tile);
+  if (!tiles) return false;
+  const path = tiles.map(centerOf);
+  // Off the centre of its tile (smoothed paths cut corners): go back to the
+  // centre first unless the first step is already a clear straight line.
   const c = centerOf(here);
-  if (Math.hypot(c.x - s.x, c.y - s.y) > 0.5 && path.length === 0)
-    path.push(here);
+  if (
+    Math.hypot(c.x - s.x, c.y - s.y) > 0.5 &&
+    (path.length === 0 ||
+      !clearLine(game.grid, s.x, s.y, path[0].x, path[0].y, BODY))
+  )
+    path.unshift(c);
   s.path = path;
   return path.length > 0;
 }
@@ -277,7 +307,7 @@ export function updateSeeker(game: Game, dt: number) {
     Math.hypot(p.x - s.x, p.y - s.y) < SEEKER.catchDistance &&
     exposed(game)
   ) {
-    catchPlayer(game, { kind: "seen", room: roomAt(...tileOf(p.x, p.y)).name });
+    catchPlayer(game, { kind: "seen", room: roomNameAt(game, p.x, p.y) });
     return;
   }
 
@@ -414,7 +444,7 @@ export function updateSeeker(game: Game, dt: number) {
         if (d < SEEKER.catchDistance) {
           catchPlayer(game, {
             kind: "seen",
-            room: roomAt(...tileOf(p.x, p.y)).name,
+            room: roomNameAt(game, p.x, p.y),
           });
         }
         break;

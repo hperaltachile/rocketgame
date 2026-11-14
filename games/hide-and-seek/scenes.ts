@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { STEP, TILE, VIEW_H, VIEW_W } from "@/lib/games/hide-and-seek/config";
-import { COLS, ROWS } from "@/lib/games/hide-and-seek/house";
 import {
   caughtHint,
   exitRisk,
@@ -35,18 +34,25 @@ import {
   ASTRO_FRAME,
   hudArt,
   labelArt,
+  houseKeys,
   makeArt,
+  makeHouseArt,
   PEEKA_FRAME,
   statusArt,
 } from "./art";
 
 export type HideCommand =
-  BaseCommand | { type: "input"; input: Input } | { type: "act" };
+  | BaseCommand
+  | { type: "setup"; house: number }
+  | { type: "input"; input: Input }
+  | { type: "act" };
 
 export type HideState = {
   phase: Phase;
   round: number;
   roundsWon: number;
+  /** Id of the house this round is in. */
+  house: string;
   /** Whole seconds left on the round timer. */
   time: number;
   hidden: boolean;
@@ -65,8 +71,6 @@ export type HideState = {
 export const W = 720;
 export const H = 480;
 const ZOOM = RENDER_SCALE * (W / VIEW_W);
-const MAP_W = COLS * TILE;
-const MAP_H = ROWS * TILE;
 const TOP = 15;
 const BOTTOM = 13;
 
@@ -138,6 +142,10 @@ export class HideScene extends Phaser.Scene {
   private hudKey = "";
   private status!: Phaser.Textures.CanvasTexture;
   private statusKey = "";
+  private houseImage!: Phaser.GameObjects.Image;
+  private houseId = "";
+  private firstHouse = 0;
+  private minimap!: Phaser.GameObjects.Image;
   private miniDot!: Phaser.GameObjects.Image;
   private miniPing!: Phaser.GameObjects.Image;
   private pingT = 0;
@@ -158,25 +166,12 @@ export class HideScene extends Phaser.Scene {
       window.matchMedia?.("(pointer: coarse)").matches === true;
 
     const probe = newGame();
-    makeArt(this, probe.grid);
-    this.add.image(0, 0, "hs-house").setOrigin(0).setDepth(0);
-    for (const spot of probe.grid.spots) {
-      const f = spot.furniture;
-      this.spots.set(
-        spot.id,
-        this.add
-          .image(f.col * TILE, f.row * TILE, `hs-spot-${spot.id}`, 0)
-          .setOrigin(0)
-          .setDepth(2),
-      );
-      this.checks.set(
-        spot.id,
-        this.add
-          .image(spot.x, f.row * TILE - 2, "hs-check")
-          .setDepth(30)
-          .setVisible(false),
-      );
-    }
+    makeArt(this);
+    makeHouseArt(this, probe.grid);
+    this.houseImage = this.add
+      .image(0, 0, houseKeys(probe.grid).house)
+      .setOrigin(0)
+      .setDepth(0);
     this.cone = this.add.graphics().setDepth(4);
     this.fx = this.add.graphics().setDepth(25);
     this.player = this.add.image(0, 0, "hs-astro", 0).setDepth(10);
@@ -209,8 +204,8 @@ export class HideScene extends Phaser.Scene {
       .setOrigin(0)
       .setScrollFactor(0)
       .setDepth(110);
-    this.add
-      .image(4, TOP + 3, "hs-minimap")
+    this.minimap = this.add
+      .image(4, TOP + 3, houseKeys(probe.grid).minimap)
       .setOrigin(0)
       .setScrollFactor(0)
       .setDepth(105)
@@ -226,12 +221,16 @@ export class HideScene extends Phaser.Scene {
       .setVisible(false);
 
     this.hs = probe;
+    this.showHouse();
     this.render(0);
 
     const unlisten = this.bridge.listen((command) => {
       switch (command.type) {
+        case "setup":
+          this.firstHouse = command.house;
+          break;
         case "start":
-          this.hs = newGame();
+          this.hs = newGame(Math.random, this.firstHouse);
           this.playing = true;
           this.paused = false;
           this.acc = 0;
@@ -322,8 +321,10 @@ export class HideScene extends Phaser.Scene {
     for (const e of events) {
       switch (e.type) {
         case "countdown":
-          if (e.n === 10)
+          if (e.n === 10) {
             this.banner(`ROUND ${g.round}`, BANNER.violet, 1300, 70);
+            this.banner(g.grid.house.name.toUpperCase(), BANNER.sky, 1300, 150);
+          }
           if (e.n === 9) this.banner("HIDE!", BANNER.gold, 900);
           if (e.n <= 3) {
             this.banner(String(e.n), BANNER.sky, 500);
@@ -434,6 +435,7 @@ export class HideScene extends Phaser.Scene {
       phase: g.phase,
       round: g.round,
       roundsWon: g.roundsWon,
+      house: g.grid.house.id,
       time: Math.ceil(g.time - 1e-9),
       hidden: g.player.hidden !== null,
       prompt: g.player.hidden
@@ -542,7 +544,40 @@ export class HideScene extends Phaser.Scene {
 
   // ------------------------------------------------------------ drawing
 
+  /** Swap in the textures, hiding spots and minimap of the current house. */
+  private showHouse() {
+    const grid = this.hs.grid;
+    if (grid.house.id === this.houseId) return;
+    this.houseId = grid.house.id;
+    makeHouseArt(this, grid);
+    const keys = houseKeys(grid);
+    this.houseImage.setTexture(keys.house);
+    this.minimap.setTexture(keys.minimap);
+    for (const image of [...this.spots.values(), ...this.checks.values()])
+      image.destroy();
+    this.spots.clear();
+    this.checks.clear();
+    for (const spot of grid.spots) {
+      const f = spot.furniture;
+      this.spots.set(
+        spot.id,
+        this.add
+          .image(f.col * TILE, f.row * TILE, keys.spot(spot.id), 0)
+          .setOrigin(0)
+          .setDepth(2),
+      );
+      this.checks.set(
+        spot.id,
+        this.add
+          .image(spot.x, f.row * TILE - 2, "hs-check")
+          .setDepth(30)
+          .setVisible(false),
+      );
+    }
+  }
+
   private render(dt: number) {
+    this.showHouse();
     const g = this.hs;
     const p = g.player;
     const s = g.seeker;
@@ -715,11 +750,13 @@ export class HideScene extends Phaser.Scene {
     // Camera follows the player (or their spot) smoothly.
     const cam = this.cameras.main;
     const target = p.hidden ? spotById(g, p.hidden) : { x: px, y: py };
-    const tx = Phaser.Math.Clamp(target.x - VIEW_W / 2, 0, MAP_W - VIEW_W);
+    const mapW = g.grid.cols * TILE;
+    const mapH = g.grid.rows * TILE;
+    const tx = Phaser.Math.Clamp(target.x - VIEW_W / 2, 0, mapW - VIEW_W);
     const ty = Phaser.Math.Clamp(
       target.y - VIEW_H / 2,
       -TOP,
-      MAP_H - VIEW_H + BOTTOM,
+      mapH - VIEW_H + BOTTOM,
     );
     const k = dt === 0 ? 1 : Math.min(1, dt * 7);
     cam.setScroll(
