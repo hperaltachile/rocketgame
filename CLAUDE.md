@@ -185,6 +185,8 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
   - Run e2e suites one game per browser.
 - **Windows editing:** Python's `open()` defaults to cp1252 and CRLF, which corrupts `×`, `—` and emoji. Use `encoding="utf-8", newline=""`, or the Edit tool. `.gitattributes` forces LF.
 - **`gh` in Git Bash:** use the full path (see Deploying).
+- **npm 10 can crash with `Cannot read properties of null (reading 'edgesOut')`** when upgrading Vitest (its exact-version peer links trip npm's resolver). Run that one install with `npx npm@11 install ...`, then check that `npm ci` (npm 10, as in CI) still works with the new lockfile.
+- **Merging stacked PRs:** wait until GitHub has switched the second PR's base to `main` before merging it. Merged too early, it lands in the old branch instead of `main` (#16 had to be re-landed as #17).
 - **A stopped `next dev` can leave its server child on the port.** `next start` then fails (EADDRINUSE) and the tests hit the old dev server. Check with `netstat -ano | grep :3123` and stop that `start-server.js` process.
 - **Phaser frame names can be numbers.** Compare `String(image.frame.name)`.
 - **three.js: screen-right is -x** when the camera looks down +z. Star Courier draws lanes at `sx(x) = -x`, so lane 0 is on the left.

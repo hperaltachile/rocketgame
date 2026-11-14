@@ -9,6 +9,19 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Security updates
+
+- **Fixes:**
+  - Next.js 16.3.6 → 16.4.3 (and `eslint-config-next` to match). This fixes the critical advisory and nine others; most affect features the site doesn't use (image optimisation, `use cache`, server actions), since every page is static.
+  - Vitest 5.0.2 → 5.0.5 (two moderate advisories in its mock server, test-only).
+  - The lockfile was regenerated, which picks up fixed `vite`, `zod` and `source-map-js`.
+  - `npm audit`: from 15 warnings (1 critical, 3 high) to 8 moderate.
+- **Changes:** removed `@vitest/coverage-v8`, which nothing used.
+- **Design decisions:**
+  - We picked the oldest releases that contain the fixes (16.4.3 from 23 October, Vitest 5.0.5 from 15 October), not the newest (16.4.6, 5.1.0), which were under two weeks old.
+  - The 8 moderate warnings left are `minimatch` under `typescript-eslint`, used only by the linter on our own glob patterns. No fixed `typescript-eslint` exists yet, and forcing `minimatch` up a major version could break linting.
+- **Docs:** the README Status now points at #17 for missions and the Hangar.
+
 ## 2026-11-14: Star Courier missions, Hangar and records
 
 - **Features:**
