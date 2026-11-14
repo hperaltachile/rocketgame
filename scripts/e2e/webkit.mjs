@@ -5,6 +5,7 @@
 import { webkit, devices } from "playwright";
 const BASE = process.env.BASE ?? "http://localhost:3123";
 const GAMES = [
+  "hide-and-seek",
   "astro-hop",
   "star-courier",
   "rocket-run",
@@ -55,6 +56,7 @@ for (const [name, device] of [
     ok(playing, `${slug}: starts`);
     if (
       [
+        "hide-and-seek",
         "astro-hop",
         "star-courier",
         "rocket-run",
@@ -96,6 +98,7 @@ for (const [name, device] of [
     if (name.includes("landscape")) {
       const controls = await page.locator("[data-touch-controls]").count();
       const expected = [
+        "hide-and-seek",
         "astro-hop",
         "star-courier",
         "rocket-run",

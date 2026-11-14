@@ -223,6 +223,42 @@ export const sfx = {
   oops: () => jingle([523, 494, 466, 440, 392, 330], 0.11, "triangle"),
   gameOverTune: () => jingle([392, 330, 262, 196], 0.22, "triangle"),
   clearTune: () => jingle([523, 659, 784, 1047, 988, 1047, 1319], 0.1),
+  // Hide & Seek: Mazes
+  footstep: () => noise(0.04, 700, 0.05),
+  footRun: () => noise(0.05, 1300, 0.09),
+  /** Peeka's little robot wheels; quieter when it's far away. */
+  peekaStep: (volume: number) => {
+    tone(260, 200, 0.05, "square", 0.02 * volume);
+    noise(0.03, 2200, 0.04 * volume, "bandpass");
+  },
+  /** Slipping into a hiding spot: a soft whoosh and a thunk. */
+  hideIn: () => {
+    noise(0.18, 1100, 0.08, "bandpass");
+    tone(160, 90, 0.12, "sine", 0.15);
+  },
+  peekOut: () => {
+    noise(0.14, 1500, 0.06, "bandpass");
+    tone(300, 420, 0.1, "triangle", 0.05);
+  },
+  /** Peeka heard something: a curious "hmm?" going up. */
+  heard: () => {
+    note(660, 0, 0.08, "triangle", 0.08);
+    note(990, 0.09, 0.14, "triangle", 0.08);
+  },
+  /** Peeka spotted you: a quick alarm sting. */
+  spotted: () => jingle([988, 1319, 988, 1319], 0.06),
+  /** A hiding spot creaks open. */
+  creakOpen: () => tone(220, 330, 0.3, "sawtooth", 0.025),
+  /** Nobody in there: a small two-note "nope". */
+  empty: () => {
+    note(523, 0, 0.08, "triangle", 0.05);
+    note(392, 0.1, 0.12, "triangle", 0.05);
+  },
+  phew: () => tone(900, 500, 0.35, "sine", 0.06),
+  readyOrNot: () => jingle([392, 523, 659, 784], 0.09, "triangle"),
+  /** Found! A friendly "gotcha" jingle. */
+  found: () => jingle([784, 659, 784, 523, 392], 0.1, "triangle"),
+
   /** Gloop the jelly gives you a squishy hug. */
   gloop: () => {
     tone(320, 90, 0.5, "sine", 0.22);

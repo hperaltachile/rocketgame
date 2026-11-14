@@ -48,15 +48,19 @@ const ARROWS: { dir: Direction; label: string; className: string }[] = [
  * Arrow pad that also works as a thumb stick: the direction follows the
  * finger's angle from the centre, so sliding the thumb steers. Calls
  * `onDirection(dir)` whenever the direction changes and `onDirection(null)`
- * on release. The arrows are real buttons for keyboard and screen readers.
+ * on release. With `onStick`, it also reports the finger's offset as a
+ * vector (each axis -1..1, 0,0 on release) for smooth 8-way movement. The
+ * arrows are real buttons for keyboard and screen readers.
  */
 export function DPad({
   onDirection,
+  onStick,
   label,
   variant = "inline",
   className = "",
 }: {
   onDirection: (dir: Direction | null) => void;
+  onStick?: (x: number, y: number) => void;
   label: string;
   variant?: "inline" | "overlay";
   className?: string;
@@ -70,6 +74,12 @@ export function DPad({
     const dx = event.clientX - (box.left + box.width / 2);
     const dy = event.clientY - (box.top + box.height / 2);
     const dir = directionFromVector(dx, dy, box.width * 0.12);
+    if (onStick) {
+      const half = box.width / 2;
+      const len = Math.hypot(dx, dy);
+      const scale = dir ? Math.min(1, len / (half * 0.7)) / len : 0;
+      onStick(dx * scale, dy * scale);
+    }
     if (dir === current.current) return;
     current.current = dir;
     if (dir) vibrate();
@@ -78,6 +88,7 @@ export function DPad({
 
   const release = () => {
     pointer.current = null;
+    onStick?.(0, 0);
     if (current.current === null) return;
     current.current = null;
     onDirection(null);
@@ -201,10 +212,12 @@ export function ActionButton({
 export default function TouchControls({
   layout,
   onDirection,
+  onStick,
   onAction,
 }: {
   layout: TouchLayout;
   onDirection?: (dir: Direction | null) => void;
+  onStick?: (x: number, y: number) => void;
   onAction?: (id: string, pressed: boolean) => void;
 }) {
   return (
@@ -214,7 +227,12 @@ export default function TouchControls({
     >
       {layout.pad && onDirection && (
         <div className="tc-left pointer-events-auto absolute bottom-6">
-          <DPad variant="overlay" label="Move" onDirection={onDirection} />
+          <DPad
+            variant="overlay"
+            label="Move"
+            onDirection={onDirection}
+            onStick={onStick}
+          />
         </div>
       )}
       {layout.actions && layout.actions.length > 0 && onAction && (

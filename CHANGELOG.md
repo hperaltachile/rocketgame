@@ -9,6 +9,36 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Hide & Seek: Mazes
+
+- **Feature: a new game, Hide & Seek: Mazes** (`/games/hide-and-seek`): a top-down stealth game in a cozy moonbase house.
+  - **The round:** Peeka the robot counts to 10 while you find a hiding spot, then searches with a flashlight. Stay undiscovered for 1:45 to win.
+  - **The house:** Bedroom, Bathroom, Study, Hall, Living Room, Storage Bay and Kitchen. Every room has two ways in or out, and there are 11 hiding spots (wardrobe, under the bed, shower curtain, laundry basket, desk cubby, plant pots, behind the sofa, tall storage box, coat closet, kitchen cupboard, pantry). Some spots are much more likely to be checked than others.
+  - **Streak of rounds:** surviving a round shows "You stayed hidden!", then the next round starts with a slightly smarter Peeka (faster, sees further, reacts sooner, rechecks spots sooner) that leans toward spots you used before. Getting found ends the game, with a hint explaining how.
+  - **Score:** 10 per second survived, 500 per round won, and 50 per close call (Peeka came within 2 tiles of your spot and left). It has a Top 10.
+- **Peeka plays fair** (`lib/games/hide-and-seek/seeker.ts`): a state machine with patrol, suspicious, investigate, search and chase.
+  - **Sight:** limited range and a cone. Walls and tall furniture block sight, low furniture doesn't. A glimpse meter fills while you're in the beam: "?" first, "!" and a chase when it's full. After losing you, it goes to where you were last seen, never to where you are now.
+  - **Hearing:** running, bumping into furniture while running, and the creak of a spot make noises. Peeka hears them along the floor (walls muffle) and comes to look. Walking is silent.
+  - **Hidden players** can only be found by opening their exact spot. Peeka remembers spots it checked for a while; those spots show a green ✓, so sneaking into one is a smart move.
+- **Feedback:**
+  - the flashlight cone (yellow, orange when suspicious, red when chasing)
+  - "?" and "!" bubbles, and noise rings
+  - a glowing outline and a "Hide" label on the nearest spot, and a red "Risky to exit" warning when Peeka is close or looking
+  - a shaded screen while hidden, and a minimap that shows Peeka only as a fading ping where it was last heard or seen
+  - new synthesized sounds, and calm and tense chiptunes
+- **Controls:**
+  - **Keyboard:** WASD or arrows, Shift to run, E/Space to hide or exit.
+  - **Touch:** the pad now also works as a smooth 8-way thumb stick (new optional `onStick` on `GameShell`/`TouchControls`; other games are unchanged), plus one Hide/Exit button.
+- **Design decisions (agreed with the owner):**
+  - The brief's "cozy house" became a moonbase home, to keep the space theme.
+  - A streak of rounds instead of single rounds, so the Top 10 compares something meaningful and the game "gets smarter".
+  - Volume uses the site-wide sound on/off switch, as in every other game. Separate music and effects volume is a follow-up.
+- **Pixel font:** added `&` and `,`.
+- **Tests:**
+  - Unit tests for the house (walled in, all floor reachable, every spot reachable, two exits per room), paths, line of sight, movement and collision, hiding, fairness (a hidden player is only ever found by opening their spot), hearing, the chase, memory, round timing and reset, and the difficulty curve.
+  - Balance tests with two hider bots (`autopilot.ts`): a "camper" that never moves wins under 35% of first rounds, a "smart" bot that moves to checked spots wins 65%+ (about 71% now), and the smart bot's win rate drops by round 6.
+  - New browser suite `scripts/e2e/hide.mjs`, plus the game in `fullscreen.mjs` and `webkit.mjs`. Home page JS is 147 KB gzipped, still under the 150 KB budget.
+
 ## 2026-11-14: Follow-ups: redirects, audit, Safari check, analytics
 
 - **Fix: old links redirect in one hop.** `/games/comet-kick` went to `/games/nova-shootout/` and then again to drop the slash. `next.config.ts` now has one rule for the bare page and one for sub-paths.
