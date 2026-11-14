@@ -9,6 +9,10 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Astro Hop is live
+
+- **Docs:** the README Status lists Astro Hop as the latest release (#19), now live with all 10 games.
+
 ## 2026-11-14: Astro Hop, a retro platformer
 
 - **Feature: Astro Hop 🦊**, a side-scrolling pixel-art platformer (Phaser).
