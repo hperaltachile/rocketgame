@@ -9,6 +9,35 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Star Courier, the first 3D game
+
+- **Feature: Star Courier 📦**, a 3D three-lane runner built with three.js.
+  - **Premise:** you're a courier racing parcels along the Ring Rail, a hover-rail around a moon base. Gloop, a giant friendly space-jelly, chases you because it wants a hug. Being caught is a comic jelly hug.
+  - **Couriers:** Pip (round helmet, parcel backpack), Zuri (tall, with a streaming scarf) and Bix (a robot on one wheel). Each is a low-poly model built in code.
+  - **Moves:** swipe or press arrows/WASD to change lanes, jump (also Space) and slide. Down in mid-air drops you fast. A move pressed up to 0.2 s early still happens (input buffer).
+  - **Obstacles:** cargo crates and craters (jump), laser gates (slide), parked cargo pods (go around) and oncoming freighters with a blinking ⚠️ (go around).
+  - **Bumps:** small things and side bumps make you stumble, and Gloop catches up; a second stumble within 4 s ends the run. Running head-on into a pod or freighter ends it straight away.
+  - **Power-ups,** each with a round timer in the HUD: Warp Dash (fast and unstoppable), Star Magnet (pulls in stardust from every lane), Moon Boots (floaty jumps that clear pods, with a bounce off their roofs), Twin Stars (double points) and Bubble Shield (takes one crash).
+  - **Worlds:** Moon Base, Mars Canyon, Ice Moon and Ring Station, each with its own colours, skyline, planet and music. The world changes every day, or pick one on the page.
+  - **Feel:** smooth lane changes, squash and stretch, dust and spark particles, camera shake, a field of view that opens up with speed. Stardust pickups ring higher with each one in a row. There's an original looping chiptune per world. Shake, the speed effect and bursts are off with reduced motion.
+- **Track:** built from 24 hand-designed chunks across six sectors (Launch Lane, Crater Row, Laser Loop, Pod Park, Freighter Way, Deep Orbit). Each new sector starts with a calm breather and a pixel-font banner. Speed and chunk spacing ease toward a cap.
+- **Tests:**
+  - Every chunk is checked to be passable from every lane.
+  - Moves, bumps and each power-up have unit tests.
+  - An autopilot that reacts like a person plays 60 runs: 98% clear the first sector, the median run is about 100 s, and crashes per kilometre rise from the early sectors to Deep Orbit.
+  - New browser test `scripts/e2e/courier.mjs`; the game is also in the `fullscreen` suite.
+- **Changes:**
+  - New `components/ThreeGame.tsx` hosts three.js games the way `PhaserGame` hosts Phaser ones. three.js (about 145 KB gzipped) downloads only after the first Start.
+  - New `games/shared/music.ts`: a tiny looping chiptune player.
+  - New sounds in `games/shared/sfx.ts`.
+  - The About page and `CREDITS.md` now list the game engines (Phaser and three.js, MIT).
+  - The README games table and Status list Star Courier.
+- **Design decisions:**
+  - The game was asked for as a copy-style "train surfer" runner. We kept the genre and the engineering asks, but made the premise, chaser, power-ups and worlds original and space-themed. There's no roof running, hoverboard, jetpack, keys to continue or letter hunt.
+  - There are no paid or currency continues: a run ends when it ends, which suits kids.
+  - Bumping a crate, gate or crater is a stumble, not the end of the run, to keep it forgiving for kids. Only pods and freighters end a run head-on.
+  - Missions, the daily delivery, the Hangar shop and the top-5 table come in a follow-up PR.
+
 ## 2026-10-18: Arcade refresh: Rocket Run sectors, Nova Shootout, Cosmic Slam
 
 - **Feature: Rocket Run gets harder the longer you fly, in sectors.**

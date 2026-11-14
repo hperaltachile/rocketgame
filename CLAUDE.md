@@ -34,7 +34,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 - **Suites:**
   - `fullscreen` covers every game; `GAMES=snake,2048` limits it.
-  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`.
+  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`, `courier`.
   - Also `home` (layout, JS size, PWA) and `copy` (site text).
 - **Run `fullscreen` one game at a time** (a loop over `GAMES=<slug>`). Headless Chrome refuses a second native-fullscreen request in the same tab.
 - **Screenshots** go to `scripts/e2e/out/` (git-ignored).
@@ -59,6 +59,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `components/TouchControls.tsx` | `DPad` (arrow pad that is also a thumb stick), `ActionButton`, and the `TouchControls` layer. Multi-touch, fires on pointerdown, vibrates. |
 | `components/GameLoader.tsx` | One `next/dynamic` chunk per game. Phaser games use `ssr: false`. |
 | `components/PhaserGame.tsx` | Creates and destroys a `Phaser.Game`, and re-fits it on resize. |
+| `components/ThreeGame.tsx` | The same for three.js games: dynamic-imports a `createGame(parent, bridge)` that returns `{ resize, destroy }`, and resizes it with a ResizeObserver. |
 | `games/shared/` | Phaser glue: `bridge.ts` (React ↔ scene commands, plus score/over/state callbacks), `usePhaserShell.ts`, `phaserConfig.ts`, `Stage.tsx` (the poster shown until Phaser loads), `sfx.ts` (Web Audio sounds and chiptune jingles). |
 | `games/shared/pixel.ts` | Pixel-art kit for the retro games: `Pixels` (a small canvas drawn in whole art pixels: shapes, dithered gradients, auto-outlines, text), `addTexture`/`addSheet` (crisp nearest-neighbour textures and frame sheets), banners (`addBanner`, `popBanner`), crowds, stars and shared effects. `ART = 3` world units per art pixel, so 720×480 is 240×160 art pixels. |
 | `lib/pixelFont.ts`, `games/shared/PixelLogo.tsx` | RocketGame's own 5×7 pixel font, used for in-game banners and for SVG title logos on the Ready screen (GameShell `logo`). |
@@ -66,6 +67,9 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `games/<slug>/` | The page component, plus `scenes.ts` and `createGame.ts` for Phaser games. |
 | `lib/storage.ts` | localStorage that never throws: best scores (`rocketgame:best:<slug>`) and settings (`rocketgame:settings`: sound, touchControls, vibration). `migrateRenamedGames` moves saved data of renamed games. |
 | `lib/games/rocket-run/autopilot.ts` | Test-only autopilot that flies whole runs through `stepRun`; the difficulty-curve tests use it. |
+| `lib/games/star-courier/` | Star Courier rules: `config.ts` (every tuning number), `chunks.ts` (hand-made track pieces, sectors, `routeExists`), `logic.ts` (`newRun`/`stepRun`), `worlds.ts` (one entry per world), `couriers.ts`, and a test-only `autopilot.ts`. |
+| `games/star-courier/` | The three.js side: `createGame.ts` (loop, pooling, events → sounds and effects), `models.ts` (every 3D model, built from simple shapes), `world.ts` (sky, fog, track, skyline from a `worlds.ts` entry), `effects.ts` (particles, shake), `names.ts` (power-up names and colours without three.js), `Hud.tsx` and the page `StarCourier.tsx`. |
+| `games/shared/music.ts` | Tiny looping chiptune player (melody + bass from a tempo, scale and note steps). |
 
 **GameShell** handles, for every game:
 - the start, paused and game-over screens
@@ -80,6 +84,10 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **Phaser 3.90**, pinned and aliased to the arcade-physics build in `next.config.ts`:
   - Used for Rocket Run, Snake, Nova Shootout and Cosmic Slam.
   - Phaser is downloaded only after the first Start.
+- **three.js 0.186.1**, pinned, for the 3D runner Star Courier:
+  - downloaded only after the first Start (`ThreeGame` + a dynamic `import("./createGame")`)
+  - import named classes from `"three"` (tree-shaken), never `import * as THREE`
+  - the game page shares state through `usePhaserShell` and `GameBridge`, which are engine-agnostic despite the name
 - **Plain React** for 2048, Minesweeper, Tic-Tac-Toe and Memory Match.
 
 ### Renaming a game
@@ -92,7 +100,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 1. Add pure rules and tests in `lib/games/<slug>/`.
 2. Add a registry entry: original name, a kid-friendly tagline and description, and an emoji icon.
-3. Add a `GameLoader` entry (`ssr: false` for Phaser).
+3. Add a `GameLoader` entry (`ssr: false` for Phaser and three.js).
 4. Build the component on `GameShell` (or `usePhaserShell` + `Stage` + `PhaserGame`) and set:
    - `aspect`, plus `maxWidth` for wide games
    - `landscape` if it plays best sideways
@@ -106,6 +114,16 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
    - listen through `bridge.listen` and report through `onScore`/`onOver`/`onState`
 7. Sounds go in `games/shared/sfx.ts` (synthesized only).
 8. Update `CREDITS.md` and the About credits if anything new is used, add a `CHANGELOG.md` entry, and run the `fullscreen` e2e suite for the game.
+
+### Star Courier: worlds and difficulty
+
+- **Add a world:** add one entry to `WORLDS` in `lib/games/star-courier/worlds.ts`, with colours, skyline kind, planet, vehicle colours and music. Nothing else changes; the world picker, renderer and music read it. `npm test` checks the colours and the music.
+- **Tune the difficulty:**
+  1. Start with `CONFIG` in `lib/games/star-courier/config.ts`: speed (`start`, `max`, `ramp`), `chunkGap`, jump and slide, `stumbleWindow` and power-up times.
+  2. Then the chunks in `chunks.ts`: which sector each unlocks in (`minSector`), how often it's picked (`weight`), and the sector distances. `pickChunk` favours the current sector's chunks and fades out ones from 3+ sectors back.
+  3. Run `npm test`. The autopilot tests check that 90%+ of runs clear sector 1, the median run is 40–150 s, and crashes per km rise from sectors 0–2 to 3–4 to Deep Orbit. Every chunk must pass `routeExists` from every lane.
+- **Chunk rules:** all lanes open at both ends, and never all three blocked at once. Leave 10 m or more between jumps or slides in a lane. A row needing two lane changes needs room before it: rows that block two lanes start at 14 m or later.
+- **The autopilot** (`autopilot.ts`) is a stand-in for a decent kid: it reacts about 0.4 s late, sees pods ~1.1 s ahead and small things ~0.9 s ahead, and plans lane routes with the same idea as `routeExists`. If you change it, re-check the curve; small changes to its lookahead swing the results a lot.
 
 ## Design rules (agreed with the owner)
 
@@ -164,4 +182,8 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **`gh` in Git Bash:** use the full path (see Deploying).
 - **A stopped `next dev` can leave its server child on the port.** `next start` then fails (EADDRINUSE) and the tests hit the old dev server. Check with `netstat -ano | grep :3123` and stop that `start-server.js` process.
 - **Phaser frame names can be numbers.** Compare `String(image.frame.name)`.
+- **three.js: screen-right is -x** when the camera looks down +z. Star Courier draws lanes at `sx(x) = -x`, so lane 0 is on the left.
+- **three.js: anything further away than the fog far distance turns into fog colour.** Sky objects (planet, ring, stars) need their own materials with `fog: false`.
+- **Don't import values from `createGame.ts` or `models.ts` into the page.** That pulls three.js into the page bundle, before Start. Shared names and colours live in `games/star-courier/names.ts`; type-only imports are fine.
+- **The chaser can block the camera.** Gloop sits between the camera and the courier, so it's scaled down, trails between lanes a little slowly, and its eyes are on stalks so it reads from behind.
 - **Pixel textures need `setFilter(NEAREST)`** (`addTexture` does it). Draw shapes with the `Pixels` methods, pixel by pixel; canvas paths get anti-aliased edges.
