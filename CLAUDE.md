@@ -36,6 +36,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
   - `fullscreen` covers every game; `GAMES=snake,2048` limits it.
   - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`, `courier`, `hop`.
   - Also `home` (layout, JS size, PWA) and `copy` (site text).
+  - `leaderboard` writes scores: run it only against a throwaway database (see Leaderboards).
 - **Run `fullscreen` one game at a time** (a loop over `GAMES=<slug>`). Headless Chrome refuses a second native-fullscreen request in the same tab.
 - **Screenshots** go to `scripts/e2e/out/` (git-ignored).
 - **Safari engine:** `webkit.mjs` uses Playwright WebKit (not a dependency; see its header).
@@ -72,6 +73,9 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `lib/games/astro-hop/` | Astro Hop rules: `config.ts` (every tuning number), `levels.ts` (the worlds as rows of text, with the tile legend), `logic.ts` (`newGame`/`step`, physics, enemies, blocks, flow; pushes `events`) and a test-only `autopilot.ts`. |
 | `games/astro-hop/` | `art.ts` (every texture, level chunks, parallax skies), `scenes.ts` (draws the game state each frame, turns events into sounds and effects, music per world) and the page `AstroHop.tsx`. |
 | `games/shared/music.ts` | Tiny looping chiptune player (melody + bass from a tempo, scale and note steps). |
+| `lib/leaderboard/` | Pure, tested leaderboard rules: `names.ts` (the word lists, `buildName`/`parseName`), `rules.ts` (which games have a board, score caps in `LEADERBOARD`, `validateSubmission`, `qualifies`, `rankOf`), `player.ts` (the browser's `rocketgame:player`: random id, name, saved scores). `db.ts` is server only (`pg` pool, rate limit, upsert). |
+| `app/api/leaderboard/[slug]/route.ts` | The site's only API: `GET` Top 10 (CDN-cached 30 s), `POST` save. 503 without `DATABASE_URL`. |
+| `components/leaderboard/` | `store.ts` (one shared board per page, fetched once), `Leaderboard.tsx` (Top 10 under the game, in `app/games/[slug]/page.tsx`), `SaveScore.tsx` (game-over prompt, rendered by GameShell), `NamePicker.tsx`. |
 
 **GameShell** handles, for every game:
 - the start, paused and game-over screens
@@ -91,6 +95,18 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
   - import named classes from `"three"` (tree-shaken), never `import * as THREE`
   - the game page shares state through `usePhaserShell` and `GameBridge`, which are engine-agnostic despite the name
 - **Plain React** for 2048, Minesweeper, Tic-Tac-Toe and Memory Match.
+
+### Leaderboards
+
+- **Database:** Neon Postgres from the Vercel Marketplace, which sets `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED`. Tables are in `scripts/db/schema.sql` (write it so it's safe to re-run: `if not exists`).
+  - **`npm run build` runs `scripts/db/migrate.mjs --if-configured` first,** so every Vercel deployment (Preview and Production) brings its database up to date. It skips without a database, and only warns if the database can't be reached, so a database problem never blocks a deploy.
+  - **Vercel's Neon variables are "sensitive":** `vercel env pull` writes `[SENSITIVE]` instead of the value. To work against Neon locally, copy a connection string from the Neon console (ideally a dev branch) into `.env.local` yourself.
+  - Optional `LEADERBOARD_SALT` env var salts the IP hashes (falls back to `DATABASE_URL`).
+- **Fake scores:** `node scripts/db/admin.mjs list <slug>` and `delete <slug> "<Name>"`.
+- **A game reports its result** with GameShell's `leaderboardScore` prop (null when there's nothing to save). `usePhaserShell` sets it for every Phaser and three.js game; React games set it next to their `recordBest` call.
+- **Adding a game:** add it to `LEADERBOARD` in `lib/leaderboard/rules.ts` with a `min` and `max`, or leave it out if its score isn't comparable (like Tic-Tac-Toe's running total of wins).
+- **When a game's scoring changes, update its `max`.** Scores above it are refused.
+- **Testing locally without Neon:** `npx pglite-server -p 55432 -m 10` (from `@electric-sql/pglite-socket`, installed outside the repo) is an in-memory Postgres; point `DATABASE_URL` at `postgresql://postgres:postgres@127.0.0.1:55432/postgres?sslmode=disable`.
 
 ### Renaming a game
 
@@ -115,7 +131,8 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
    - draw textures with `bake()` and show them with `.setScale(HI)`
    - listen through `bridge.listen` and report through `onScore`/`onOver`/`onState`
 7. Sounds go in `games/shared/sfx.ts` (synthesized only).
-8. Update `CREDITS.md` and the About credits if anything new is used, add a `CHANGELOG.md` entry, and run the `fullscreen` e2e suite for the game.
+8. Leaderboard: add it to `LEADERBOARD` (see Leaderboards) and pass `leaderboardScore` if it's a React game.
+9. Update `CREDITS.md` and the About credits if anything new is used, add a `CHANGELOG.md` entry, and run the `fullscreen` e2e suite for the game.
 
 ### Astro Hop: levels and feel
 
@@ -147,6 +164,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 ## Design rules (agreed with the owner)
 
 - **Audience is kids.** Use simple, friendly words ("So close!", not "Miss"), big tap targets (44 px or more; touch controls 64–80 px) and generous timing.
+- **Players never type text that others see.** Leaderboard names come only from the word lists in `lib/leaderboard/names.ts` (kid-friendly words only; add words, don't remove them, or saved names stop validating). The server rejects anything `parseName` can't rebuild.
 - **No creator references.** Never mention or describe the site's creator, or where they live, anywhere in the site copy.
 - **Original content only:**
   - No real brands, logos, leagues, teams, players, celebrities or recognisable characters. No copied art, sounds, music or fonts.
@@ -210,4 +228,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **The chaser can block the camera.** Gloop sits between the camera and the courier, so it's scaled down, trails between lanes a little slowly, and its eyes are on stalks so it reads from behind.
 - **Tall page extras go in GameShell's `below` slot, not `controls`.** `controls` sits above the board, and a big panel there (like Star Courier's Hangar) pushes the board off screen; the `fullscreen` suite's "whole board visible" check catches it.
 - **Parsing a level while blanking its spawn tiles:** look at the original row (`def.rows`), not the grid being edited. Astro Hop once turned each `HHH` platform into three overlapping ones.
+- **Overlay cards centre with `m-auto`, not `items-center`.** In a scrolling flex box, `items-center` pushes the top of a tall card out of reach; the save prompt on a short landscape phone hit this.
+- **The leaderboard `GET` is CDN-cached for 30 s,** so a reload right after saving can briefly show the old board. The save response updates the board on the page directly.
+- **`lib/leaderboard/db.ts` must stay out of client code** (it imports `pg` and `node:crypto`). Client components import from `rules.ts`, `names.ts` and `player.ts` only.
 - **Pixel textures need `setFilter(NEAREST)`** (`addTexture` does it). Draw shapes with the `Pixels` methods, pixel by pixel; canvas paths get anti-aliased edges.

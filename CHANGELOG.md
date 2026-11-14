@@ -9,6 +9,30 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Leaderboards
+
+- **Feature: a Top 10 for every game** except Tic-Tac-Toe, shared by everyone who plays.
+  - **The board** shows under each game: rank (🥇🥈🥉 for the top three), space name and score, with the player's own row marked "← you".
+  - **Saving:** when a finished game makes the Top 10, the game-over screen says "You made the Top 10! 🏆" with a **Save score** button. Play again stays the main button.
+  - **Names:** players build a space name from three lists (word, creature, number 1–99, e.g. "Cosmic Fox 42"), or tap 🎲 Surprise me. There are about 160,000 possible names. The browser remembers the name.
+  - **One row per player per game:** the server keeps each player's best, and a lower score only updates the name.
+- **Backend:** the site's first. Neon Postgres (through the Vercel Marketplace) and one route handler, `app/api/leaderboard/[slug]`:
+  - `GET` returns the Top 10, cached at the CDN for 30 s.
+  - `POST` saves a score. It checks that the request comes from the site itself, that the name is built from the lists, that the score fits the game, and that the IP has made no more than 10 saves a minute (stored as a salted hash, kept for a day).
+  - Without `DATABASE_URL` the API answers 503 and the boards stay hidden, so local dev and the rest of the site work as before.
+  - New scripts: `scripts/db/schema.sql`, `migrate.mjs` (creates the tables) and `admin.mjs` (list a board, delete a fake score).
+  - **`npm run build` creates the tables first** (`migrate.mjs --if-configured`). Vercel's Neon variables are "sensitive" and can't be pulled to a laptop, but builds can read them, so every deployment sets up its own database. Without a database it skips; if the database can't be reached it warns and the deploy goes on.
+- **Fix:** the start, pause and game-over card is now centred with `m-auto` instead of `items-center`. A card taller than the board (the save prompt on a short landscape phone) used to lose its top, with no way to scroll to it.
+- **Tests:**
+  - Unit tests for the name lists and parsing, the submission checks, Top-10 qualification and rank, and repairing the saved player.
+  - New browser suite `scripts/e2e/leaderboard.mjs`: plays 2048 to the end, saves with a built name, checks the board and a reload, and checks that the API refuses bad saves. Tested against a throwaway local Postgres.
+- **Design decisions:**
+  - **No typed names.** The players are kids (about 8–13): typed nicknames invite real names, schools and rude words, and collecting personal information from under-13s raises COPPA concerns. Word lists make every name safe without moderation.
+  - **All-time boards only**, for now. Weekly boards are an easy addition later (the table has `updated_at`).
+  - **Tic-Tac-Toe has no board.** Its "Wins" is a running total that only grows with time played.
+  - **Cheating:** the games run in the browser, so a determined player can always send a fake score. Score caps per game, the origin check and the rate limit stop casual abuse, and `admin.mjs` removes the rest.
+  - **The About page** says what a saved score keeps: the space name and the score, nothing else.
+
 ## 2026-11-14: Astro Hop, a retro platformer
 
 - **Feature: Astro Hop 🦊**, a side-scrolling pixel-art platformer (Phaser).

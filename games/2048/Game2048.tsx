@@ -129,6 +129,7 @@ export default function Game2048() {
       overTitle="No more moves"
       overMessage={<p>You scored {score.toLocaleString("en-US")} points.</p>}
       isNewBest={isNewBest}
+      leaderboardScore={status === "over" && game ? game.score : null}
       touch={TOUCH}
       onDirection={(dir) => dir && play(dir)}
       callout={

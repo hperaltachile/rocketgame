@@ -19,6 +19,7 @@ import {
   useReducedMotion,
   useSetting,
 } from "./hooks";
+import SaveScore from "./leaderboard/SaveScore";
 import SoundToggle from "./SoundToggle";
 import TouchControls, { type TouchLayout } from "./TouchControls";
 
@@ -42,6 +43,11 @@ type Props = {
   overTitle?: string;
   overMessage?: ReactNode;
   isNewBest?: boolean;
+  /**
+   * The finished run's result for the leaderboard (null or omitted: nothing
+   * to save, e.g. a lost Minesweeper game). Offers to save it if it makes the Top 10.
+   */
+  leaderboardScore?: number | null;
   /** Settings shown above the board, e.g. difficulty (hidden in fullscreen). */
   controls?: ReactNode;
   howToPlay: ReactNode;
@@ -100,6 +106,7 @@ export default function GameShell({
   overTitle = "Game over",
   overMessage,
   isNewBest = false,
+  leaderboardScore = null,
   controls,
   howToPlay,
   hasSound = false,
@@ -329,12 +336,14 @@ export default function GameShell({
             )}
 
             {status !== "playing" && !askToRotate && (
-              <div className="bg-overlay absolute inset-0 z-30 flex items-center justify-center overflow-auto rounded-2xl p-3 backdrop-blur-sm">
+              // m-auto centres the card but, unlike items-center, keeps its top
+              // reachable by scrolling when it's taller than the board.
+              <div className="bg-overlay absolute inset-0 z-30 flex overflow-auto rounded-2xl p-3 backdrop-blur-sm">
                 <div
                   role="dialog"
                   aria-modal="false"
                   aria-labelledby="overlay-title"
-                  className="w-full max-w-xs rounded-2xl border border-line bg-surface p-4 text-center text-text shadow-xl sm:p-5"
+                  className="m-auto w-full max-w-xs rounded-2xl border border-line bg-surface p-4 text-center text-text shadow-xl sm:p-5"
                 >
                   {status === "ready" && (
                     <>
@@ -409,6 +418,9 @@ export default function GameShell({
                           </p>
                         )}
                       </div>
+                      {leaderboardScore !== null && (
+                        <SaveScore game={game} score={leaderboardScore} />
+                      )}
                       <button
                         ref={primaryRef}
                         type="button"

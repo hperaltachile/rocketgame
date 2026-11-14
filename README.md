@@ -2,7 +2,7 @@
 
 Quick, free browser mini-games with a rockets-and-space theme — [rocketgame.app](https://rocketgame.app).
 
-Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action and platform games), three.js (the 3D runner Star Courier) and plain React (puzzle games).
+Built with Next.js (App Router), TypeScript, Tailwind CSS, Neon Postgres (leaderboards), Phaser 3 (action and platform games), three.js (the 3D runner Star Courier) and plain React (puzzle games).
 
 ## Games
 
@@ -19,7 +19,7 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action and 
 | 🪐 Memory Match  | React    | Pair up 8 planets in as few moves as you can.                                                                |
 | 🔢 2048          | React    | Slide and merge tiles.                                                                                       |
 
-Every game has fullscreen, on-screen touch controls on phones, sound, pause, and a best score saved in the browser.
+Every game has fullscreen, on-screen touch controls on phones, sound, pause, and a best score saved in the browser. All but Tic-Tac-Toe also have a shared **Top 10** leaderboard, with space names built from word lists (no typing).
 
 ## Status
 
@@ -27,6 +27,8 @@ _Last updated 2026-11-14._
 
 - **Live:** all 9 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel.
 - **Next release (in review):** **Astro Hop**, a retro platformer with three worlds (Clover Plains, Crystal Caves, Sky Bridges). Live once its PR is merged.
+- **Leaderboards (in review):** a Top 10 per game, on Neon Postgres (connected in Vercel for Production and Preview). Each deployment creates the tables during its build, so they go live when the PR is merged.
+
 - **Latest release:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
 - **Before that** ([#13](https://github.com/hperaltachile/rocketgame/pull/13)):
   - Rocket Run got progressive difficulty in sectors.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import GameLoader from "@/components/GameLoader";
+import Leaderboard from "@/components/leaderboard/Leaderboard";
 import { GAMES, getGame } from "@/lib/games/registry";
 import { openGraph } from "@/lib/site";
 
@@ -43,7 +44,10 @@ export default async function GamePage({ params }: PageProps<"/games/[slug]">) {
         </Link>
       </nav>
       {game.available ? (
-        <GameLoader slug={game.slug} />
+        <>
+          <GameLoader slug={game.slug} />
+          <Leaderboard slug={game.slug} />
+        </>
       ) : (
         <section className="mx-auto max-w-2xl rounded-2xl border border-line bg-surface p-8 text-center">
           <p aria-hidden="true" className="text-6xl">

@@ -85,6 +85,7 @@ export default function MemoryMatch() {
       overTitle="All pairs found! 🎉"
       overMessage={<p>You did it in {moves} moves.</p>}
       isNewBest={isNewBest}
+      leaderboardScore={status === "over" ? moves : null}
       howToPlay={
         <ul>
           <li>Tap a card to turn it over, then tap another one.</li>

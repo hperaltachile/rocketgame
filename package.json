@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/db/migrate.mjs --if-configured && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@vercel/analytics": "2.0.1",
+    "@vercel/functions": "3.11.3",
     "next": "16.4.3",
+    "pg": "8.23.1",
     "phaser": "3.90.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.4",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "0.186.0",

@@ -68,6 +68,7 @@ export function usePhaserShell<
       status,
       score,
       isNewBest,
+      leaderboardScore: status === "over" && score > 0 ? score : null,
       hasSound: true,
       onStart: start,
       onRestart: start,
