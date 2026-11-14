@@ -9,6 +9,14 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Follow-ups: redirects, audit, Safari check, analytics
+
+- **Fix: old links redirect in one hop.** `/games/comet-kick` went to `/games/nova-shootout/` and then again to drop the slash. `next.config.ts` now has one rule for the bare page and one for sub-paths.
+- **Fix: `npm audit` is clean.** An `overrides` entry forces `minimatch` 11.0.3 (the advisory is fixed from 11.0.1) under `typescript-eslint`, which still asks for `^10.2.2`. It's lint-only tooling; lint still reports TypeScript rules.
+- **Tests:** `webkit.mjs` now covers Astro Hop and Star Courier. The whole suite passes against rocketgame.app in Playwright WebKit (1.64.1), iPhone portrait and landscape, including Nova Shootout and Cosmic Slam.
+- **Checked: Vercel Web Analytics** is enabled, its script loads and a page view is queued. No visits were recorded because the script ignores headless browsers (all our tests); a real visit still needs to be confirmed in the dashboard.
+- **Docs:** README Status lists leaderboards as live, and the closed follow-ups are gone.
+
 ## 2026-11-14: Leaderboards
 
 - **Feature: a Top 10 for every game** except Tic-Tac-Toe, shared by everyone who plays.

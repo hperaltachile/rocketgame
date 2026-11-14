@@ -9,12 +9,21 @@ const nextConfig: NextConfig = {
     },
   },
   // Renamed games keep their old links working.
+  // Two rules per game: with `:path*` alone, the bare page redirected to
+  // `/games/<new>/` and then again to drop the trailing slash.
   redirects() {
-    return Object.entries(RENAMED_SLUGS).map(([from, to]) => ({
-      source: `/games/${from}/:path*`,
-      destination: `/games/${to}/:path*`,
-      permanent: true,
-    }));
+    return Object.entries(RENAMED_SLUGS).flatMap(([from, to]) => [
+      {
+        source: `/games/${from}`,
+        destination: `/games/${to}`,
+        permanent: true,
+      },
+      {
+        source: `/games/${from}/:path+`,
+        destination: `/games/${to}/:path+`,
+        permanent: true,
+      },
+    ]);
   },
 };
 

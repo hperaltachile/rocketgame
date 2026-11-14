@@ -1,10 +1,12 @@
 // Safari-engine smoke test: iPhone emulation in Playwright WebKit.
 // Playwright is not a project dependency. To run it once:
-//   npx -y playwright@1 install webkit   (then run from a folder with playwright installed)
+//   npx -y playwright@1.64.1 install webkit   (then run from a folder with playwright installed)
 //   BASE=https://rocketgame.app node scripts/e2e/webkit.mjs
 import { webkit, devices } from "playwright";
 const BASE = process.env.BASE ?? "http://localhost:3123";
 const GAMES = [
+  "astro-hop",
+  "star-courier",
   "rocket-run",
   "nova-shootout",
   "cosmic-slam",
@@ -52,12 +54,19 @@ for (const [name, device] of [
         "Turn your phone sideways!";
     ok(playing, `${slug}: starts`);
     if (
-      ["rocket-run", "nova-shootout", "cosmic-slam", "snake"].includes(slug)
+      [
+        "astro-hop",
+        "star-courier",
+        "rocket-run",
+        "nova-shootout",
+        "cosmic-slam",
+        "snake",
+      ].includes(slug)
     ) {
       await page.waitForSelector("canvas", { timeout: 8000 }).catch(() => {});
       ok(
         (await page.locator("canvas").count()) === 1,
-        `${slug}: Phaser canvas renders`,
+        `${slug}: ${slug === "star-courier" ? "three.js" : "Phaser"} canvas renders`,
       );
     }
     await page.locator("[data-fullscreen-button]").tap();
@@ -87,6 +96,8 @@ for (const [name, device] of [
     if (name.includes("landscape")) {
       const controls = await page.locator("[data-touch-controls]").count();
       const expected = [
+        "astro-hop",
+        "star-courier",
         "rocket-run",
         "nova-shootout",
         "cosmic-slam",
