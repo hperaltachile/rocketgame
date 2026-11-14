@@ -27,7 +27,11 @@ import {
   powerUpTime,
   type PowerUpKind,
 } from "@/lib/games/star-courier/config";
-import { getCourier, type CourierId } from "@/lib/games/star-courier/couriers";
+import {
+  dressed,
+  getCourier,
+  type CourierId,
+} from "@/lib/games/star-courier/couriers";
 import {
   laneX,
   multiplier,
@@ -39,6 +43,8 @@ import {
   type Action,
   type Run,
   type RunEvent,
+  type RunOptions,
+  type RunStats,
 } from "@/lib/games/star-courier/logic";
 import { getWorld, type World } from "@/lib/games/star-courier/worlds";
 import type { BaseCommand, GameBridge } from "../shared/bridge";
@@ -52,6 +58,7 @@ import {
   makeFreighter,
   makeGap,
   makeGate,
+  makeBeacon,
   makeGloop,
   makePickup,
   makePod,
@@ -63,7 +70,15 @@ import { buildWorld, type Scenery } from "./world";
 
 export type CourierCommand =
   | BaseCommand
-  | { type: "setup"; world: string; courier: CourierId }
+  | {
+      type: "setup";
+      world: string;
+      courier: CourierId;
+      suit: string;
+      /** From the save: shop upgrades, rank multiplier, best distance so far. */
+      options: RunOptions;
+      bestDistance: number;
+    }
   | { type: "move"; action: Action };
 
 export type CourierPhase = "ready" | "running" | "caught" | "crash";
@@ -81,6 +96,9 @@ export type CourierState = {
   messageId: number;
   /** Big banner (new sector) or a small toast. */
   banner: boolean;
+  /** Counts for missions; final once the phase is "caught" or "crash". */
+  stats: RunStats;
+  score: number;
 };
 
 const DT = 1 / 60;
@@ -110,8 +128,14 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
 
   let world: World = getWorld(null);
   let scenery: Scenery = buildWorld(scene, world);
-  let courierId: CourierId = "pip";
-  let rig: CourierRig = makeCourier(getCourier(courierId));
+  let courierKey = "pip/classic";
+  let rig: CourierRig = makeCourier(getCourier("pip"));
+  let runOptions: RunOptions = {};
+  let bestDistance = 0;
+  let passedBest = false;
+  const beacon = makeBeacon();
+  beacon.visible = false;
+  scene.add(beacon);
   scene.add(rig.root);
   const gloop: GloopRig = makeGloop();
   scene.add(gloop.root);
@@ -202,6 +226,8 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
       message,
       messageId,
       banner,
+      stats: { ...run.stats },
+      score: run.score,
     });
   }
 
@@ -217,11 +243,12 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
     scenery = buildWorld(scene, world);
   }
 
-  function setCourier(id: CourierId) {
-    if (id === courierId) return;
+  function setCourier(id: CourierId, suit: string) {
+    const key = `${id}/${suit}`;
+    if (key === courierKey) return;
     scene.remove(rig.root);
-    courierId = id;
-    rig = makeCourier(getCourier(id));
+    courierKey = key;
+    rig = makeCourier(dressed(getCourier(id), suit));
     scene.add(rig.root);
   }
 
@@ -229,7 +256,8 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
     for (const id of [...live.keys()]) release(id);
     particles.clear();
     shake.reset();
-    run = newRun();
+    run = newRun(runOptions);
+    passedBest = bestDistance <= 0;
     phase = "running";
     paused = false;
     endTimer = 0;
@@ -248,7 +276,9 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
     switch (command.type) {
       case "setup":
         setWorld(command.world);
-        setCourier(command.courier);
+        setCourier(command.courier, command.suit);
+        runOptions = command.options;
+        bestDistance = command.bestDistance;
         break;
       case "start":
         start();
@@ -524,6 +554,29 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
     gloop.eyes.rotation.z = Math.sin(animTime * 3) * 0.08;
   }
 
+  /** An arch over the track where your best run ended. */
+  function animateBeacon() {
+    const ahead = bestDistance - run.distance;
+    beacon.visible = bestDistance > 0 && ahead > -15 && ahead < 140;
+    if (!beacon.visible) return;
+    beacon.position.set(0, 0, bestDistance);
+    (beacon.userData.flag as Object3D).rotation.y =
+      Math.sin(animTime * 3) * 0.3;
+    if (!passedBest && ahead < 0 && phase === "running") {
+      passedBest = true;
+      play(sfx.levelUp);
+      say("New best distance! Keep going!");
+      particles.burst(
+        0,
+        4,
+        bestDistance,
+        "#ffe066",
+        bridge.reducedMotion ? 8 : 40,
+        6,
+      );
+    }
+  }
+
   function placeCamera(dt: number) {
     const p = run.player;
     const x = sx(playerX(p));
@@ -611,6 +664,7 @@ export function createGame(parent: HTMLElement, bridge: Bridge): ThreeHandle {
     syncDust();
     animateCourier(dt);
     animateGloop(dt);
+    animateBeacon();
     particles.update(dt);
     scenery.update(run.distance);
     placeCamera(dt);
