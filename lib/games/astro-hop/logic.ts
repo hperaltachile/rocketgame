@@ -6,7 +6,9 @@
  */
 
 import {
+  BOSS,
   ENEMY,
+  FIREBAR,
   FLOW,
   ITEM,
   KIT,
@@ -24,6 +26,16 @@ import {
   VIEW_W,
 } from "./config";
 import { LEVELS, type LevelDef } from "./levels";
+import {
+  bossActive,
+  damageBoss,
+  newBoss,
+  powerDown,
+  updateBoss,
+  type Boss,
+  type Bolt,
+} from "./boss";
+import { blipBox, fireBarOrbs, type Blip, type FireBar } from "./hazards";
 
 // ---------------------------------------------------------------- types
 
@@ -114,6 +126,12 @@ export type Phase = "intro" | "play" | "dying" | "goal" | "over" | "won";
 export type GoalStage = "slide" | "walk" | "launch" | "done";
 
 export type Goal = {
+  /** A beacon pole (F), or a fortress power switch (S). */
+  kind: "pole" | "switch";
+  /** The switch's tile, and whether it has been pressed. */
+  switchCol: number;
+  switchRow: number;
+  switched: boolean;
   /** x of the pole's centre, and its top and bottom. */
   poleX: number;
   poleTop: number;
@@ -150,7 +168,13 @@ export type GameEvent =
   | { type: "tally" }
   | { type: "clear" }
   | { type: "gameOver" }
-  | { type: "win" };
+  | { type: "win" }
+  | { type: "lava" }
+  | { type: "bossWake" }
+  | { type: "bossHit" }
+  | { type: "bossDown" }
+  | { type: "bolt" }
+  | { type: "switch" };
 
 export type Game = {
   /** The level list (the real one, or test levels). */
@@ -166,6 +190,10 @@ export type Game = {
   items: Item[];
   sparks: Spark[];
   movers: Mover[];
+  fireBars: FireBar[];
+  blips: Blip[];
+  boss: Boss | null;
+  bolts: Bolt[];
   bumps: Bump[];
   camX: number;
   time: number;
@@ -188,9 +216,9 @@ export type Game = {
 
 // ---------------------------------------------------------------- tiles
 
-const SOLID = new Set(["#", "X", "B", "?", "M", "U", "T", "F"]);
+const SOLID = new Set(["#", "X", "B", "?", "M", "U", "T", "F", "*", "%", "="]);
 /** Tiles that are background once the level is loaded. */
-const SPAWNS = new Set(["K", "g", "k", "f", "H", "V", "c"]);
+const SPAWNS = new Set(["K", "g", "k", "f", "H", "V", "c", "Z"]);
 
 export const isSolid = (ch: string) => SOLID.has(ch);
 
@@ -208,6 +236,10 @@ type Parsed = {
   flag: { col: number; row: number };
   enemies: { kind: EnemyKind; col: number; row: number }[];
   movers: { kind: "h" | "v"; col: number; row: number; len: number }[];
+  goalKind: "pole" | "switch";
+  fireBars: { col: number; row: number; dir: 1 | -1 }[];
+  blips: { col: number; row: number }[];
+  boss: { col: number; row: number } | null;
 };
 
 const ENEMY_CHARS: Record<string, EnemyKind> = {
@@ -223,13 +255,26 @@ export function parseLevel(def: LevelDef): Parsed {
   let flag = { col: grid[0].length - 8, row: ROWS - 3 };
   const enemies: Parsed["enemies"] = [];
   const movers: Parsed["movers"] = [];
+  const fireBars: Parsed["fireBars"] = [];
+  const blips: Parsed["blips"] = [];
+  let goalKind: Parsed["goalKind"] = "pole";
+  let boss: Parsed["boss"] = null;
   grid.forEach((cells, row) => {
     for (let col = 0; col < cells.length; col++) {
       const ch = cells[col];
       if (ch === "K") start = { col, row };
       else if (ch === "c") checkpoint = { col, row };
       else if (ch === "F") flag = { col, row };
-      else if (ENEMY_CHARS[ch])
+      else if (ch === "S") {
+        flag = { col, row };
+        goalKind = "switch";
+      } else if (ch === "Z") boss = { col, row };
+      else if (ch === "*" || ch === "%")
+        fireBars.push({ col, row, dir: ch === "*" ? 1 : -1 });
+      else if (ch === "^") {
+        blips.push({ col, row });
+        cells[col] = "~";
+      } else if (ENEMY_CHARS[ch])
         enemies.push({ kind: ENEMY_CHARS[ch], col, row });
       else if ((ch === "H" || ch === "V") && def.rows[row][col - 1] !== ch) {
         let len = 1;
@@ -239,7 +284,18 @@ export function parseLevel(def: LevelDef): Parsed {
       if (SPAWNS.has(ch)) cells[col] = ".";
     }
   });
-  return { grid, start, checkpoint, flag, enemies, movers };
+  return {
+    grid,
+    start,
+    checkpoint,
+    flag,
+    enemies,
+    movers,
+    goalKind,
+    fireBars,
+    blips,
+    boss,
+  };
 }
 
 // ---------------------------------------------------------------- setup
@@ -332,11 +388,35 @@ export function loadLevel(game: Game, index: number, fromCheckpoint: boolean) {
     dx: 0,
     dy: 0,
   }));
+  const tuning = level.tuning ?? {};
+  game.fireBars = parsed.fireBars.map((b) => ({
+    ...b,
+    period: tuning.firebarPeriod ?? FIREBAR.period,
+    // Neighbouring bars start at different angles.
+    start: -Math.PI / 2 + (b.col % 4) * (Math.PI / 2),
+  }));
+  game.blips = parsed.blips.map((b) => ({
+    col: b.col,
+    surface: b.row * TILE,
+    offset: (b.col * 0.53) % 2,
+  }));
+  // A respawn always meets a fresh, sleeping Big Clank.
+  game.boss = parsed.boss
+    ? newBoss(parsed.boss.col, parsed.boss.row, {
+        speed: tuning.bossSpeed,
+        boltEvery: tuning.boltEvery,
+      })
+    : null;
+  game.bolts = [];
 
   const poleBottom = parsed.flag.row * TILE;
   const poleTop = poleBottom - POLE_TILES * TILE;
   const rocketCol = parsed.flag.col + ROCKET_OFFSET;
   game.goal = {
+    kind: parsed.goalKind,
+    switchCol: parsed.flag.col,
+    switchRow: parsed.flag.row,
+    switched: false,
     poleX: parsed.flag.col * TILE + TILE / 2,
     poleTop,
     poleBottom,
@@ -922,6 +1002,65 @@ function touchEnemies(game: Game, input: Input) {
   }
 }
 
+// ---------------------------------------------------------------- fortress
+
+/** Lava, fire bars, lava blips, Big Clank and its bolts. */
+function touchHazards(game: Game, input: Input) {
+  const p = game.player;
+  // Lava: the surface is a few pixels down, so grazing the edge is fine.
+  const left = Math.floor(p.x / TILE);
+  const right = Math.floor((p.x + p.w - 0.01) / TILE);
+  const bottom = Math.floor((p.y + p.h - 0.01) / TILE);
+  for (let col = left; col <= right; col++) {
+    for (let row = Math.max(0, bottom - 1); row <= bottom; row++) {
+      if (tileAt(game, col, row) === "~" && p.y + p.h > row * TILE + 5) {
+        die(game);
+        game.events.push({ type: "lava" });
+        return;
+      }
+    }
+  }
+
+  const hit = (box: Box) => {
+    if (!overlaps(box, p)) return false;
+    hurt(game);
+    return game.phase !== "play";
+  };
+  for (const bar of game.fireBars) {
+    if (Math.abs(bar.col * TILE - p.x) > 4 * TILE) continue;
+    for (const orb of fireBarOrbs(bar, game.clock)) if (hit(orb)) return;
+  }
+  for (const blip of game.blips) {
+    const box = blipBox(blip, game.clock);
+    if (box && hit(box)) return;
+  }
+  for (const bolt of game.bolts) if (hit(bolt)) return;
+
+  const boss = game.boss;
+  if (!bossActive(boss) || !overlaps(p, boss)) return;
+  const stomp = p.vy > 0 && p.y + p.h <= boss.y + boss.h * 0.5;
+  if (stomp) {
+    if (boss.hurt <= 0) {
+      const cx = boss.x + boss.w / 2;
+      const beaten = damageBoss(game, BOSS.stomp, BOSS.hurt);
+      addPoints(game, beaten ? POINTS.boss : POINTS.bossHit, cx, boss.y);
+      game.events.push({ type: "stomp", x: cx, y: boss.y });
+      // Knocked back, away from Kit.
+      const away = p.x + p.w / 2 < cx ? 1 : -1;
+      boss.x = Math.max(
+        boss.minX,
+        Math.min(boss.maxX, boss.x + away * BOSS.knockback),
+      );
+    }
+    p.y = boss.y - p.h;
+    p.vy = -(input.jump ? PHYS.stompBounceHeld : PHYS.stompBounce);
+    p.jumpHeld = input.jump;
+    return;
+  }
+  // Flashing after a hit, Big Clank is harmless.
+  if (boss.hurt <= 0) hurt(game);
+}
+
 // ---------------------------------------------------------------- items and sparks
 
 function updateItems(game: Game, dt: number) {
@@ -986,6 +1125,18 @@ function updateSparks(game: Game, dt: number) {
     ) {
       return false;
     }
+    if (bossActive(game.boss) && overlaps(s, game.boss)) {
+      const boss = game.boss;
+      const beaten = damageBoss(game, BOSS.spark, 0.3);
+      addPoints(
+        game,
+        beaten ? POINTS.boss : POINTS.spark,
+        boss.x + boss.w / 2,
+        boss.y,
+      );
+      game.events.push({ type: "puff", x: s.x + 3, y: s.y + 3 });
+      return false;
+    }
     for (const e of game.enemies) {
       if (!e.active || e.state === "flipped" || e.state === "squashed")
         continue;
@@ -1030,6 +1181,25 @@ function collectCoins(game: Game) {
 }
 
 // ---------------------------------------------------------------- flow
+
+/** Kit presses the fortress power switch: Big Clank powers down. */
+function pressSwitch(game: Game) {
+  const p = game.player;
+  const g = game.goal;
+  game.phase = "goal";
+  game.phaseTime = 0;
+  g.stage = "walk";
+  g.switched = true;
+  p.facing = 1;
+  powerDown(game);
+  addPoints(
+    game,
+    POINTS.switch,
+    g.switchCol * TILE + TILE / 2,
+    g.switchRow * TILE,
+  );
+  game.events.push({ type: "switch" });
+}
 
 function enterGoal(game: Game) {
   const p = game.player;
@@ -1144,6 +1314,7 @@ export function step(game: Game, input: Input, dt = STEP) {
     case "goal": {
       game.clock += dt;
       updateMovers(game);
+      updateBoss(game, dt);
       updateGoal(game, dt);
       const p = game.player;
       game.camX = Math.max(
@@ -1182,7 +1353,10 @@ export function step(game: Game, input: Input, dt = STEP) {
   updateEnemies(game, dt);
   updateItems(game, dt);
   updateSparks(game, dt);
+  updateBoss(game, dt);
   touchEnemies(game, input);
+  if (game.phase !== "play") return;
+  touchHazards(game, input);
   if (game.phase !== "play") return;
   collectCoins(game);
 
@@ -1195,8 +1369,17 @@ export function step(game: Game, input: Input, dt = STEP) {
     game.reachedCheckpoint = true;
     game.events.push({ type: "checkpoint" });
   }
-  // The pole stands on a block: touching the block or the pole counts.
-  if (p.x + p.w >= game.goal.poleX - TILE / 2 - 1) {
+  const g = game.goal;
+  if (g.kind === "switch") {
+    const button = {
+      x: g.switchCol * TILE + 2,
+      y: g.switchRow * TILE,
+      w: TILE - 4,
+      h: TILE,
+    };
+    if (overlaps(p, button)) pressSwitch(game);
+  } else if (p.x + p.w >= g.poleX - TILE / 2 - 1) {
+    // The pole stands on a block: touching the block or the pole counts.
     enterGoal(game);
   }
 

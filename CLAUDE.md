@@ -70,7 +70,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `lib/games/rocket-run/autopilot.ts` | Test-only autopilot that flies whole runs through `stepRun`; the difficulty-curve tests use it. |
 | `lib/games/star-courier/` | Star Courier rules: `config.ts` (every tuning number), `chunks.ts` (hand-made track pieces, sectors, `routeExists`), `logic.ts` (`newRun`/`stepRun`), `worlds.ts` (one entry per world), `couriers.ts` (couriers, suits, prices), `progress.ts` (the save, missions, rank, Daily Delivery, shop) and a test-only `autopilot.ts`. |
 | `games/star-courier/` | The three.js side: `createGame.ts` (loop, pooling, events → sounds and effects), `models.ts` (every 3D model, built from simple shapes), `world.ts` (sky, fog, track, skyline from a `worlds.ts` entry), `effects.ts` (particles, shake), `names.ts` (power-up names and colours without three.js), `Hud.tsx`, `Hangar.tsx` (shop, missions, records) and the page `StarCourier.tsx`. |
-| `lib/games/astro-hop/` | Astro Hop rules: `config.ts` (every tuning number), `levels.ts` (the worlds as rows of text, with the tile legend), `logic.ts` (`newGame`/`step`, physics, enemies, blocks, flow; pushes `events`) and a test-only `autopilot.ts`. |
+| `lib/games/astro-hop/` | Astro Hop rules: `config.ts` (every tuning number), `levels.ts` (the levels as rows of text, with the tile legend), `logic.ts` (`newGame`/`step`, physics, enemies, blocks, flow; pushes `events`), `hazards.ts` (fortress fire bars and lava blips, pure functions of the clock), `boss.ts` (Big Clank and its bolts) and a test-only `autopilot.ts`. |
 | `games/astro-hop/` | `art.ts` (every texture, level chunks, parallax skies), `scenes.ts` (draws the game state each frame, turns events into sounds and effects, music per world) and the page `AstroHop.tsx`. |
 | `lib/games/hide-and-seek/` | Hide & Seek: Mazes rules: `config.ts` (every tuning number, and `seekerTuning(roundsWon)`, the difficulty curve), `house.ts` (what a house is: types and helpers), `houses.ts` (the houses: maps as rows of text, rooms, furniture and hiding spots), `nav.ts` (grid, A* paths, walking distances, line of sight, the flashlight cone), `state.ts` (types, `newGame`/`resetRound`, shared helpers), `seeker.ts` (Peeka's state machine and senses), `logic.ts` (`step`: movement, hiding, timer, round flow; queries such as `nearSpot`, `spotStatus`, `exitRisk`, `statusText`) and a test-only `autopilot.ts` (camper and smart hider bots). |
 | `games/hide-and-seek/` | `art.ts` (top-down pixel art: the house, furniture and spot frames, the astronaut, Peeka, icons, HUD), `scenes.ts` (`HideScene`: draws the state, cone, prompts, camera, minimap, sounds and music) and the page `HideAndSeek.tsx`. |
@@ -138,12 +138,19 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 ### Astro Hop: levels and feel
 
-- **Edit or add a world** in `lib/games/astro-hop/levels.ts`: 15 rows of text per level, one character per tile (legend at the top of the file). Then run `npm test`: it checks the level is well formed, that the beacon is reachable without Run, and that the walking autopilot clears it with at most one lost life. Pick its look with `theme` (`plains`, `caves`, `sky`).
+- **Edit or add a world** in `lib/games/astro-hop/levels.ts`: 15 rows of text per level, one character per tile (legend at the top of the file). Then run `npm test`: it checks the level is well formed, that the beacon is reachable without Run, and that the walking autopilot clears it with at most one lost life. Pick its look with `theme` (`plains`, `caves`, `sky`, `fortress`). Add new levels at the end of `LEVELS`: the saved "furthest level" is an index.
 - **Level rules for kids:**
   - Gaps of 3 tiles or less (a walking jump clears about 4).
   - Moving platforms come within 1 tile of the land at each end of their trip.
   - No enemy waiting where Kit lands after a blind jump (over a wall, onto an island).
   - Tunnels at least 2 tiles high, so Big Kit fits.
+  - Tubes at most 3 tiles tall (a walking jump rises about 4), and drops of 4 tiles or less where the autopilot must walk off.
+- **Fortress rules (tested):**
+  - Lava pits of 3 tiles or less (lava under Big Clank's bridge doesn't count).
+  - Fire bars stay out of reach of the start, the checkpoint and the first tile after every gap.
+  - One `Z` standing on the `=` bridge, one `S` on solid ground past it, and open sky over the rocket (the end room has no roof).
+  - Speed up a fortress with `tuning` on its `LevelDef` (`firebarPeriod`, `boltEvery`, `bossSpeed`); the defaults are `FIREBAR` and `BOSS` in `config.ts`.
+- **The autopilot looks ahead near hazards.** Within a few tiles of a fire bar, blip, Big Clank or a bolt, it `structuredClone`s the game and plays about 1.25 s ahead for each plan (walk on, jump now, wait, step back), and takes the first one that keeps Kit safe. New hazards need no autopilot code, as long as they live in the game state.
 - **Tune the feel** with `PHYS` in `config.ts` (speeds, jump, gravity, coyote time, jump buffer). The jump-height and gap tests in `logic.test.ts` and the autopilot catch changes that make levels impossible.
 - **The camera works in art pixels.** The scene zooms in 4× (`RENDER_SCALE` × 2) with its origin at the top left, so `camera.scrollX` is the level x at the left edge. Textures are shown at scale 1 (one art pixel per world unit), unlike the other pixel games (`ART = 3`).
 - **The scene field can't be called `game` or `sound`:** those names are taken by `Phaser.Scene`. The rules state is `this.hop`.

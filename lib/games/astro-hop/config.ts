@@ -134,4 +134,56 @@ export const POINTS = {
     [0, 100],
   ] as [number, number][],
   coinsForLife: 100,
+  /** Big Clank: beating it, and pressing the power switch. */
+  boss: 5000,
+  bossHit: 1000,
+  switch: 2000,
+} as const;
+
+/** Fortress fire bars: a chain of plasma orbs spinning round a block. */
+export const FIREBAR = {
+  orbs: 5,
+  /** Distance between orb centres. */
+  spacing: 8,
+  /** Each orb's hit box (smaller than it looks, to be kind). */
+  size: 6,
+  /** Seconds per full turn (levels can make it faster). */
+  period: 4.4,
+} as const;
+
+/** Lava blips: hop out of the lava, fall back in, wait, repeat. */
+export const BLIP = {
+  wait: 1.8,
+  jump: 280,
+  gravity: 600,
+  size: 10,
+} as const;
+
+/** Big Clank, the fortress boss. */
+export const BOSS = {
+  w: 24,
+  h: 28,
+  /** Health; a stomp takes `stomp`, a spark `spark` (3 stomps or 5 sparks). */
+  hp: 15,
+  stomp: 5,
+  spark: 3,
+  speed: 22,
+  /** Paces this far either side of where it starts. */
+  range: 40,
+  hopEvery: 2.6,
+  hopJump: 240,
+  gravity: 900,
+  /** Harmless and flashing this long after a stomp. */
+  hurt: 1.2,
+  knockback: 14,
+  boltEvery: 3.2,
+  /** Only throws when Kit is within this many art pixels. */
+  boltRange: 140,
+  boltSpeed: 70,
+  boltBounce: 150,
+  boltGravity: 600,
+  boltLife: 2.6,
+  boltSize: 8,
+  /** Powered down, it floats up and away this fast. */
+  float: 50,
 } as const;

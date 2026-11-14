@@ -1,4 +1,5 @@
-// Astro Hop: start, intro card, run and jump, pause, world picker, all three worlds.
+// Astro Hop: start, intro card, run and jump, pause, world picker, and a
+// look at every kind of level (caves, sky, both fortresses with Big Clank).
 const BASE = process.env.BASE ?? "http://localhost:3123";
 
 export default async function scenario(page) {
@@ -44,7 +45,10 @@ export default async function scenario(page) {
   assert((await overlay()) === "Ready?", "start screen shows");
   assert(
     await page.eval(
-      `[...document.querySelectorAll("[aria-label='Start at world'] button")].map(b => b.disabled).join() === "false,true,true"`,
+      `(() => {
+        const locked = [...document.querySelectorAll("[aria-label='Start at world'] button")].map(b => b.disabled);
+        return locked.length === 8 && !locked[0] && locked.slice(1).every(Boolean);
+      })()`,
     ),
     "only World 1-1 is unlocked at first",
   );
@@ -102,8 +106,11 @@ export default async function scenario(page) {
   for (const [index, id] of [
     [1, "1-2"],
     [2, "1-3"],
+    [3, "1-4"],
+    [5, "2-2"],
+    [7, "2-4"],
   ]) {
-    await page.eval(`localStorage.setItem("rocketgame:astro-hop:unlocked", "2");
+    await page.eval(`localStorage.setItem("rocketgame:astro-hop:unlocked", "7");
       localStorage.setItem("rocketgame:astro-hop:start", "${index}")`);
     await page.goto(BASE + "/games/astro-hop");
     assert((await stat("World")) === id, `World ${id} can be picked`);
@@ -119,6 +126,9 @@ export default async function scenario(page) {
     await page.sleep(1500);
     await hold("ArrowRight", false);
     await page.screenshot(`hop-${id}-run`);
+    if (id.endsWith("-4")) {
+      assert((await stat("Boss")) === "sleep", `${id} has Big Clank, asleep`);
+    }
   }
 }
 

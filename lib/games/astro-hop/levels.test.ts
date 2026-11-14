@@ -1,10 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { MOVER, PHYS, POLE_TILES, ROCKET_OFFSET, ROWS, TILE } from "./config";
+import {
+  FIREBAR,
+  MOVER,
+  PHYS,
+  POINTS,
+  POLE_TILES,
+  ROCKET_OFFSET,
+  ROWS,
+  TILE,
+} from "./config";
+import { LEADERBOARD } from "@/lib/leaderboard/rules";
 import { LEVELS } from "./levels";
 import { autoplay } from "./autopilot";
 import { isSolid, newGame, parseLevel } from "./logic";
 
-const LEGEND = new Set(".#XB?MLT_CFcKgkfHV".split(""));
+const LEGEND = new Set(".#XB?MLT_CFcKgkfHV~^*%=SZ".split(""));
+
+/** How far a fire bar's orbs reach from the centre of its block. */
+const FIREBAR_REACH = (FIREBAR.orbs - 1) * FIREBAR.spacing + FIREBAR.size / 2;
+
+/** Whether Kit (small, standing on the tile at col, row) is in a fire bar's reach. */
+function inFireBarReach(rows: string[], col: number, row: number): boolean {
+  const kit = { x: col * TILE + 3, y: (row + 1) * TILE - 14, w: 10, h: 14 };
+  return rows.some((cells, r) =>
+    [...cells].some((ch, c) => {
+      if (ch !== "*" && ch !== "%") return false;
+      const cx = c * TILE + TILE / 2;
+      const cy = r * TILE + TILE / 2;
+      const nx = Math.max(kit.x, Math.min(cx, kit.x + kit.w));
+      const ny = Math.max(kit.y, Math.min(cy, kit.y + kit.h));
+      return Math.hypot(nx - cx, ny - cy) < FIREBAR_REACH;
+    }),
+  );
+}
 
 /**
  * Kit's walking jump (no Run), sampled every tick: how far he has moved and
@@ -108,21 +136,71 @@ describe.each(LEVELS.map((level) => [level.id, level] as const))(
       }
       const all = level.rows.join("");
       expect(all.split("K")).toHaveLength(2);
-      expect(all.split("F")).toHaveLength(2);
+      // One goal: a beacon pole, or (in a fortress) a power switch.
+      expect(all.split("F").length + all.split("S").length).toBe(3);
       expect(all.split("c").length).toBeLessThanOrEqual(2);
     });
 
-    it("has a beacon with room for its pole and the rocket", () => {
-      const { grid, flag } = parseLevel(level);
-      expect(flag.row - POLE_TILES).toBeGreaterThanOrEqual(1);
-      for (let r = flag.row - POLE_TILES; r < flag.row; r++) {
-        expect(grid[r][flag.col]).toBe(".");
-      }
+    const fortress = level.theme === "fortress";
+    it.runIf(fortress)("has Big Clank, its bridge and the switch", () => {
+      const all = level.rows.join("");
+      expect(all.split("Z")).toHaveLength(2);
+      expect(all.split("S")).toHaveLength(2);
+      const { grid, flag, boss } = parseLevel(level);
+      // Big Clank stands on its bridge, and the switch is past it on solid ground.
+      expect(grid[boss!.row + 1][boss!.col]).toBe("=");
+      expect(flag.col).toBeGreaterThan(boss!.col);
       expect(isSolid(grid[flag.row + 1][flag.col])).toBe(true);
+      // Open sky over the rocket, so it can blast off.
       const rocket = flag.col + ROCKET_OFFSET;
-      // The camera can scroll far enough to show the rocket take off.
+      for (let c = rocket - 1; c <= rocket + 1; c++) {
+        for (let r = 0; r <= flag.row; r++) expect(grid[r][c]).toBe(".");
+      }
       expect(grid[0].length - rocket).toBeGreaterThanOrEqual(12);
     });
+
+    it("keeps lava pits to three tiles or less", () => {
+      // Lava under Big Clank's bridge doesn't count: Kit never touches it.
+      level.rows.forEach((row, r) => {
+        const open = [...row]
+          .map((ch, c) => (level.rows[r - 1]?.[c] === "=" ? "#" : ch))
+          .join("");
+        for (const run of open.match(/[~^]+/g) ?? [])
+          expect(run.length).toBeLessThanOrEqual(3);
+      });
+    });
+
+    it("keeps fire bars away from the start, checkpoint and landings", () => {
+      const { start, checkpoint } = parseLevel(level);
+      expect(inFireBarReach(level.rows, start.col, start.row)).toBe(false);
+      if (checkpoint) {
+        expect(inFireBarReach(level.rows, checkpoint.col, checkpoint.row)).toBe(
+          false,
+        );
+      }
+      // The first tile after any pit or lava gap, where Kit lands.
+      const floor = level.rows[13];
+      for (let c = 1; c < floor.length; c++) {
+        if (isSolid(floor[c]) && !isSolid(floor[c - 1])) {
+          expect(inFireBarReach(level.rows, c, 12), `col ${c}`).toBe(false);
+        }
+      }
+    });
+
+    it.runIf(!fortress)(
+      "has a beacon with room for its pole and the rocket",
+      () => {
+        const { grid, flag } = parseLevel(level);
+        expect(flag.row - POLE_TILES).toBeGreaterThanOrEqual(1);
+        for (let r = flag.row - POLE_TILES; r < flag.row; r++) {
+          expect(grid[r][flag.col]).toBe(".");
+        }
+        expect(isSolid(grid[flag.row + 1][flag.col])).toBe(true);
+        const rocket = flag.col + ROCKET_OFFSET;
+        // The camera can scroll far enough to show the rocket take off.
+        expect(grid[0].length - rocket).toBeGreaterThanOrEqual(12);
+      },
+    );
 
     it("has tubes two tiles wide", () => {
       for (const row of level.rows) {
@@ -157,4 +235,25 @@ it("the reachability check catches an impossible gap", () => {
     i >= 13 ? "#".repeat(10) + "..." + "#".repeat(27) : r,
   );
   expect(beaconReachable(ok)).toBe(true);
+});
+
+it("a perfect run through every level stays under the Top 10 cap", () => {
+  // Generous: every coin and block, every enemy knocked out by the top of a
+  // shell chain, the top of the pole (or the switch and Big Clank) and a full
+  // clock turned into points.
+  let total = 0;
+  for (const level of LEVELS) {
+    const all = level.rows.join("");
+    const count = (chars: string) =>
+      [...all].filter((ch) => chars.includes(ch)).length;
+    total += count("C?") * POINTS.coin;
+    total += count("ML") * POINTS.powerUp;
+    total += count("B") * POINTS.brick;
+    total += count("gkf") * Math.max(...POINTS.shellChain);
+    total += level.time * POINTS.timeTick;
+    total += all.includes("S")
+      ? POINTS.switch + POINTS.boss + 2 * POINTS.bossHit
+      : POINTS.pole[0][1];
+  }
+  expect(total).toBeLessThan(LEADERBOARD["astro-hop"]!.max);
 });

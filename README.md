@@ -26,7 +26,8 @@ Every game has fullscreen, on-screen touch controls on phones, sound, pause, and
 
 _Last updated 2026-11-14._
 
-- **Live:** 11 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel. Hide & Seek: Mazes' three houses and smoother seeker are in review on branch `feat/hide-and-seek-houses`.
+- **In review:** **Astro Hop World 2**: five new levels (8 in all), with lava fortresses, fire bars, lava blips and Big Clank, the boss (branch `feat/astro-hop-world-2`).
+- **Live:** 11 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel. Hide & Seek: Mazes now has three houses and a smoother seeker ([#24](https://github.com/hperaltachile/rocketgame/pull/24)).
 - **Latest release:** **Leaderboards**, a shared Top 10 for every game except Tic-Tac-Toe, on Neon Postgres. Space names are built from word lists, so there's no typing ([#21](https://github.com/hperaltachile/rocketgame/pull/21)).
 - **Before that:** **Astro Hop**, a retro platformer with three worlds: Clover Plains, Crystal Caves and Sky Bridges ([#19](https://github.com/hperaltachile/rocketgame/pull/19)).
 - **Also:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
@@ -38,6 +39,7 @@ _Last updated 2026-11-14._
   - Play Hide & Seek: Mazes with a kid and on a real phone: is round 1 winnable but not trivial, are the thumb stick and the Hide button comfortable, are the "?"/"!" cues and the ✓ marks understood? Tune `lib/games/hide-and-seek/config.ts` (the balance tests guard the curve).
   - Hide & Seek: separate music and sound-effect volume sliders (the brief asked for them; every game uses the site-wide sound switch for now).
   - Try Star Courier on a real phone (swipes, fullscreen, sound).
+  - Play the Astro Hop fortresses (1-4, 2-4) with a kid: are the fire bars and blips learnable, is Big Clank fun rather than scary, and do they find the power switch? Tune `FIREBAR`, `BLIP` and `BOSS` in `lib/games/astro-hop/config.ts`, or a level's `tuning`.
   - Try Astro Hop on a real phone and with a kid: the touch pad plus Jump and Run buttons, and whether the worlds feel fair. More worlds can be added as rows of text in `lib/games/astro-hop/levels.ts`.
   - Play a few games on a real phone and save a score to the Top 10 (all testing so far used emulated phones).
   - Test Nova Shootout and Cosmic Slam on a real iPhone. They pass the Safari-engine suite (`webkit.mjs`, iPhone portrait and landscape), but only a real device can check touch feel and sound.
