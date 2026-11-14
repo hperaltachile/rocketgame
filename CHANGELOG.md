@@ -33,6 +33,10 @@ PR numbers link to GitHub. Add an entry in the same PR as the change.
   - **Cheating:** the games run in the browser, so a determined player can always send a fake score. Score caps per game, the origin check and the rate limit stop casual abuse, and `admin.mjs` removes the rest.
   - **The About page** says what a saved score keeps: the space name and the score, nothing else.
 
+## 2026-11-14: Astro Hop is live
+
+- **Docs:** the README Status lists Astro Hop as the latest release (#19), now live with all 10 games.
+
 ## 2026-11-14: Astro Hop, a retro platformer
 
 - **Feature: Astro Hop 🦊**, a side-scrolling pixel-art platformer (Phaser).
