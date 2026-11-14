@@ -39,7 +39,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
   - `leaderboard` writes scores: run it only against a throwaway database (see Leaderboards).
 - **Run `fullscreen` one game at a time** (a loop over `GAMES=<slug>`). Headless Chrome refuses a second native-fullscreen request in the same tab.
 - **Screenshots** go to `scripts/e2e/out/` (git-ignored).
-- **Safari engine:** `webkit.mjs` uses Playwright WebKit (not a dependency; see its header).
+- **Safari engine:** `webkit.mjs` uses Playwright WebKit (not a dependency; see its header). Install Playwright in a folder outside the repo, copy the script there and run it. Its game lists (canvas and touch controls) need each new game added.
 
 ## Deploying
 
@@ -111,7 +111,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 ### Renaming a game
 
 1. Rename the slug, folders and files, and the registry entry.
-2. Add `"old-slug": "new-slug"` to `RENAMED_SLUGS` in `lib/games/registry.ts`. Old URLs then 308-redirect (`next.config.ts`), and saved best scores and `rocketgame:<old-slug>:…` keys move to the new slug on the next visit.
+2. Add `"old-slug": "new-slug"` to `RENAMED_SLUGS` in `lib/games/registry.ts`. Old URLs then 308-redirect in one hop (`next.config.ts` has one rule for the bare page and one for sub-paths; a single `:path*` rule would add a trailing slash and a second hop), and saved best scores and `rocketgame:<old-slug>:…` keys move to the new slug on the next visit.
 3. Update the e2e scripts, `CREDITS.md` and the docs.
 
 ### Adding a game (checklist)
@@ -218,6 +218,9 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
   - Run e2e suites one game per browser.
 - **Windows editing:** Python's `open()` defaults to cp1252 and CRLF, which corrupts `×`, `—` and emoji. Use `encoding="utf-8", newline=""`, or the Edit tool. `.gitattributes` forces LF.
 - **`gh` in Git Bash:** use the full path (see Deploying).
+- **`package.json` `overrides` forces `minimatch` 11.0.3 under `@typescript-eslint/typescript-estree`** to clear a moderate advisory (GHSA-g3hv-75wg-m249) in lint-only tooling. Remove it when `typescript-eslint` depends on minimatch 11 itself, and check that lint still reports TypeScript rules.
+- **Vercel Web Analytics ignores headless browsers** (`navigator.webdriver` or "Headless" in the user agent), so e2e runs never count as visits and can't confirm analytics either. v2 serves its script from a project-specific path (`/<hash>/script.js`), not `/_vercel/insights/`.
+- **On Windows, `npm ci` fails with EPERM** while a running `next` server holds `@next/swc-win32-x64-msvc`. Stop the server, or run `npm install` to restore `node_modules`; CI runs `npm ci` on Linux.
 - **npm 10 can crash with `Cannot read properties of null (reading 'edgesOut')`** when upgrading Vitest (its exact-version peer links trip npm's resolver). Run that one install with `npx npm@11 install ...`, then check that `npm ci` (npm 10, as in CI) still works with the new lockfile.
 - **Merging stacked PRs:** wait until GitHub has switched the second PR's base to `main` before merging it. Merged too early, it lands in the old branch instead of `main` (#16 had to be re-landed as #17).
 - **A stopped `next dev` can leave its server child on the port.** `next start` then fails (EADDRINUSE) and the tests hit the old dev server. Check with `netstat -ano | grep :3123` and stop that `start-server.js` process.

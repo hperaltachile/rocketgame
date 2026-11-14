@@ -26,9 +26,9 @@ Every game has fullscreen, on-screen touch controls on phones, sound, pause, and
 _Last updated 2026-11-14._
 
 - **Live:** all 10 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel.
-- **Leaderboards (in review):** a Top 10 per game, on Neon Postgres (connected in Vercel for Production and Preview). Each deployment creates the tables during its build, so they go live when the PR is merged.
-- **Latest release:** **Astro Hop**, a retro platformer with three worlds: Clover Plains, Crystal Caves and Sky Bridges ([#19](https://github.com/hperaltachile/rocketgame/pull/19)).
-- **Before that:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
+- **Latest release:** **Leaderboards**, a shared Top 10 for every game except Tic-Tac-Toe, on Neon Postgres. Space names are built from word lists, so there's no typing ([#21](https://github.com/hperaltachile/rocketgame/pull/21)).
+- **Before that:** **Astro Hop**, a retro platformer with three worlds: Clover Plains, Crystal Caves and Sky Bridges ([#19](https://github.com/hperaltachile/rocketgame/pull/19)).
+- **Also:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
 - **Earlier** ([#13](https://github.com/hperaltachile/rocketgame/pull/13)):
   - Rocket Run got progressive difficulty in sectors.
   - Comet Kick became **Nova Shootout** and Star Slugger became **Cosmic Slam**, both redrawn as retro pixel art.
@@ -36,10 +36,10 @@ _Last updated 2026-11-14._
 - **Open follow-ups:**
   - Try Star Courier on a real phone (swipes, fullscreen, sound).
   - Try Astro Hop on a real phone and with a kid: the touch pad plus Jump and Run buttons, and whether the worlds feel fair. More worlds can be added as rows of text in `lib/games/astro-hop/levels.ts`.
-  - `npm audit` still lists 8 moderate warnings in lint-only tooling (`minimatch` under `typescript-eslint`). Update `eslint-config-next` once a fixed `typescript-eslint` ships.
-  - Test Nova Shootout and Cosmic Slam on a real iPhone (the WebKit e2e suite needs Playwright, which isn't installed).
-  - Old links take two redirects (`/games/comet-kick` → `/games/nova-shootout/` → `/games/nova-shootout`); make it one.
-  - Vercel Web Analytics is set up but had recorded no page views as of 2026-10-18. Confirm it counts a real visit.
+  - Play a few games on a real phone and save a score to the Top 10 (all testing so far used emulated phones).
+  - Test Nova Shootout and Cosmic Slam on a real iPhone. They pass the Safari-engine suite (`webkit.mjs`, iPhone portrait and landscape), but only a real device can check touch feel and sound.
+  - Open rocketgame.app in a normal browser (not headless, no ad blocker) and confirm the visit shows up in Vercel Web Analytics. The setup is verified: analytics is on, its script loads and queues a page view. The script deliberately ignores headless browsers, so automated tests can't finish the check.
+  - Remove the `minimatch` override in `package.json` once `typescript-eslint` depends on minimatch 11 itself.
 - **History:** see [CHANGELOG.md](CHANGELOG.md). How to work on the project: [CLAUDE.md](CLAUDE.md).
 
 ## Development
