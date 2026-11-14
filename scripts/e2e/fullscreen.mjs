@@ -4,6 +4,7 @@ const ONLY = process.env.GAMES?.split(",");
 
 // What each game should show in fullscreen on a touch screen.
 const GAMES = {
+  "hide-and-seek": { pad: true, actions: ["act"], landscape: true },
   "astro-hop": { pad: true, actions: ["jump", "run"], landscape: true },
   "rocket-run": { pad: false, actions: ["boost"], landscape: true },
   snake: { pad: true, actions: [], landscape: false },

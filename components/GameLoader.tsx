@@ -21,6 +21,10 @@ export function GameLoading() {
  * the server.
  */
 const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
+  "hide-and-seek": dynamic(() => import("@/games/hide-and-seek/HideAndSeek"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
   "astro-hop": dynamic(() => import("@/games/astro-hop/AstroHop"), {
     ssr: false,
     loading: GameLoading,

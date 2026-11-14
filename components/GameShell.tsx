@@ -64,6 +64,8 @@ type Props = {
   /** On-screen controls for fullscreen on touch screens. */
   touch?: TouchLayout;
   onDirection?: (dir: Direction | null) => void;
+  /** Smooth thumb-stick vector from the pad (each axis -1..1), for free movement. */
+  onStick?: (x: number, y: number) => void;
   onAction?: (id: string, pressed: boolean) => void;
   /** Short message floating over the top of the board ("GOAL!", "You made 2048!"). */
   callout?: ReactNode;
@@ -116,6 +118,7 @@ export default function GameShell({
   landscape = false,
   touch,
   onDirection,
+  onStick,
   onAction,
   callout,
   logo,
@@ -441,6 +444,7 @@ export default function GameShell({
           <TouchControls
             layout={touch}
             onDirection={onDirection}
+            onStick={onStick}
             onAction={onAction}
           />
         )}

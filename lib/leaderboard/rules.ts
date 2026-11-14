@@ -17,6 +17,8 @@ type BoardRule = {
  */
 export const LEADERBOARD: Readonly<Partial<Record<GameSlug, BoardRule>>> = {
   "astro-hop": { min: 1, max: 999_999 },
+  // About 1,550 points per round won (seconds, win bonus) plus close calls.
+  "hide-and-seek": { min: 1, max: 1_000_000 },
   "rocket-run": { min: 1, max: 1_000_000 },
   "star-courier": { min: 1, max: 10_000_000 },
   "nova-shootout": { min: 1, max: 5 },

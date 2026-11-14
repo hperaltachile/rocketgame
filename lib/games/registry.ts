@@ -1,4 +1,5 @@
 export type GameSlug =
+  | "hide-and-seek"
   | "astro-hop"
   | "rocket-run"
   | "star-courier"
@@ -29,6 +30,17 @@ export type GameInfo = {
 };
 
 export const GAMES: readonly GameInfo[] = [
+  {
+    slug: "hide-and-seek",
+    name: "Hide & Seek: Mazes",
+    tagline: "Hide from Peeka the robot in a moonbase house.",
+    description:
+      "Sneak around a cozy moonbase house and find the best hiding spots before Peeka the robot finishes counting! Stay out of its flashlight, walk quietly, and stay hidden until the timer runs out.",
+    icon: "🔦",
+    engine: "phaser",
+    best: { label: "Best", direction: "high" },
+    available: true,
+  },
   {
     slug: "astro-hop",
     name: "Astro Hop",

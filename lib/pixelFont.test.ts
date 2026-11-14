@@ -4,7 +4,7 @@ import { GLYPH_H, GLYPH_W, hasGlyph, textPixels, textWidth } from "./pixelFont";
 describe("pixel font", () => {
   it("has every character the games show", () => {
     const used =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !?.:/-+'" + "goal! so close";
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !?.:/-+',&" + "goal! so close";
     for (const ch of used) expect(hasGlyph(ch), ch).toBe(true);
   });
 

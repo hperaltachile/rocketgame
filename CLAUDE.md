@@ -34,7 +34,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 - **Suites:**
   - `fullscreen` covers every game; `GAMES=snake,2048` limits it.
-  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`, `courier`, `hop`.
+  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`, `courier`, `hop`, `hide`.
   - Also `home` (layout, JS size, PWA) and `copy` (site text).
   - `leaderboard` writes scores: run it only against a throwaway database (see Leaderboards).
 - **Run `fullscreen` one game at a time** (a loop over `GAMES=<slug>`). Headless Chrome refuses a second native-fullscreen request in the same tab.
@@ -57,7 +57,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `lib/games/<slug>/logic.ts` (+ `.test.ts`) | Pure rules. No React, Phaser or DOM, and `rng` is injectable. Every game has unit tests. |
 | `components/GameShell.tsx` | The frame every game uses (details below). |
 | `components/fullscreen/` | `useFullscreen` (native Fullscreen API, falling back to a "pseudo" fixed overlay on iPhone, where Back exits) and `FullscreenButton`. |
-| `components/TouchControls.tsx` | `DPad` (arrow pad that is also a thumb stick), `ActionButton`, and the `TouchControls` layer. Multi-touch, fires on pointerdown, vibrates. |
+| `components/TouchControls.tsx` | `DPad` (arrow pad that is also a thumb stick), `ActionButton`, and the `TouchControls` layer. Multi-touch, fires on pointerdown, vibrates. GameShell's optional `onStick(x, y)` gets the pad's smooth vector (each axis -1..1) for free 8-way movement (Hide & Seek). |
 | `components/GameLoader.tsx` | One `next/dynamic` chunk per game. Phaser games use `ssr: false`. |
 | `components/PhaserGame.tsx` | Creates and destroys a `Phaser.Game`, and re-fits it on resize. |
 | `components/ThreeGame.tsx` | The same for three.js games: dynamic-imports a `createGame(parent, bridge)` that returns `{ resize, destroy }`, and resizes it with a ResizeObserver. |
@@ -72,6 +72,8 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `games/star-courier/` | The three.js side: `createGame.ts` (loop, pooling, events → sounds and effects), `models.ts` (every 3D model, built from simple shapes), `world.ts` (sky, fog, track, skyline from a `worlds.ts` entry), `effects.ts` (particles, shake), `names.ts` (power-up names and colours without three.js), `Hud.tsx`, `Hangar.tsx` (shop, missions, records) and the page `StarCourier.tsx`. |
 | `lib/games/astro-hop/` | Astro Hop rules: `config.ts` (every tuning number), `levels.ts` (the worlds as rows of text, with the tile legend), `logic.ts` (`newGame`/`step`, physics, enemies, blocks, flow; pushes `events`) and a test-only `autopilot.ts`. |
 | `games/astro-hop/` | `art.ts` (every texture, level chunks, parallax skies), `scenes.ts` (draws the game state each frame, turns events into sounds and effects, music per world) and the page `AstroHop.tsx`. |
+| `lib/games/hide-and-seek/` | Hide & Seek: Mazes rules: `config.ts` (every tuning number, and `seekerTuning(roundsWon)`, the difficulty curve), `house.ts` (the map as rows of text, rooms, furniture and hiding spots), `nav.ts` (grid, A* paths, walking distances, line of sight, the flashlight cone), `state.ts` (types, `newGame`/`resetRound`, shared helpers), `seeker.ts` (Peeka's state machine and senses), `logic.ts` (`step`: movement, hiding, timer, round flow; queries such as `nearSpot`, `spotStatus`, `exitRisk`, `statusText`) and a test-only `autopilot.ts` (camper and smart hider bots). |
+| `games/hide-and-seek/` | `art.ts` (top-down pixel art: the house, furniture and spot frames, the astronaut, Peeka, icons, HUD), `scenes.ts` (`HideScene`: draws the state, cone, prompts, camera, minimap, sounds and music) and the page `HideAndSeek.tsx`. |
 | `games/shared/music.ts` | Tiny looping chiptune player (melody + bass from a tempo, scale and note steps). |
 | `lib/leaderboard/` | Pure, tested leaderboard rules: `names.ts` (the word lists, `buildName`/`parseName`), `rules.ts` (which games have a board, score caps in `LEADERBOARD`, `validateSubmission`, `qualifies`, `rankOf`), `player.ts` (the browser's `rocketgame:player`: random id, name, saved scores). `db.ts` is server only (`pg` pool, rate limit, upsert). |
 | `app/api/leaderboard/[slug]/route.ts` | The site's only API: `GET` Top 10 (CDN-cached 30 s), `POST` save. 503 without `DATABASE_URL`. |
@@ -88,7 +90,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 **Engines:**
 - **Phaser 3.90**, pinned and aliased to the arcade-physics build in `next.config.ts`:
-  - Used for Rocket Run, Snake, Nova Shootout, Cosmic Slam and Astro Hop.
+  - Used for Rocket Run, Snake, Nova Shootout, Cosmic Slam, Astro Hop and Hide & Seek: Mazes.
   - Phaser is downloaded only after the first Start.
 - **three.js 0.186.1**, pinned, for the 3D runner Star Courier:
   - downloaded only after the first Start (`ThreeGame` + a dynamic `import("./createGame")`)
@@ -145,6 +147,18 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **Tune the feel** with `PHYS` in `config.ts` (speeds, jump, gravity, coyote time, jump buffer). The jump-height and gap tests in `logic.test.ts` and the autopilot catch changes that make levels impossible.
 - **The camera works in art pixels.** The scene zooms in 4× (`RENDER_SCALE` × 2) with its origin at the top left, so `camera.scrollX` is the level x at the left edge. Textures are shown at scale 1 (one art pixel per world unit), unlike the other pixel games (`ART = 3`).
 - **The scene field can't be called `game` or `sound`:** those names are taken by `Phaser.Scene`. The rules state is `this.hop`.
+
+### Hide & Seek: house and seeker
+
+- **Edit the house** in `lib/games/hide-and-seek/house.ts`: `MAP` is walls (`#`), windows (`O`), floor (`.`) and doorways (`d`); rooms are rects in `ROOMS`; furniture and hiding spots are tile rects in `FURNITURE` (a spot needs an `approach` floor tile next to it and a `suspicion` 0..1). Then run `npm test`: it checks the house is walled in, every floor tile and spot is reachable, and every room has two ways in or out.
+- **Fairness rules (tested):**
+  - Peeka never knows where a hidden player is. A hidden player is found only when Peeka opens that exact spot (`inspecting` finishes on it).
+  - Sight needs range, the cone and a clear line (walls and tall furniture block it). After losing you, Peeka goes to the last place it saw you.
+  - Peeka hears noises by walking distance (`distanceField`), so walls muffle. Walking is silent; running, bumping while running and a spot's creak are not.
+  - Seeing you slip into a spot counts as a clue: Peeka checks that spot first.
+- **Tune the difficulty** in `config.ts`: each `SEEKER_CURVE` value eases from `base` (round 1) to `cap` with the rounds won. Then run `npm test`: the balance tests play many rounds with two bots and expect the camper (never moves) to win under 35% of first rounds, the smart bot (moves to ✓ spots) 65% or more, and the smart bot to do clearly worse by round 6. Small changes to `thorough` and `memory` swing the camper's rate a lot.
+- **The camera works in art pixels**, like Astro Hop (zoom `RENDER_SCALE` × 2, origin top left); the top bar and status strip are canvas textures with `setScrollFactor(0)`.
+- **The scene must not import values from the page, and the page only imports types from `scenes.ts`** (Phaser stays out of the page bundle). The page reads `config.ts` and `state.ts` directly.
 
 ### Star Courier: worlds and difficulty
 
@@ -223,7 +237,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **On Windows, `npm ci` fails with EPERM** while a running `next` server holds `@next/swc-win32-x64-msvc`. Stop the server, or run `npm install` to restore `node_modules`; CI runs `npm ci` on Linux.
 - **npm 10 can crash with `Cannot read properties of null (reading 'edgesOut')`** when upgrading Vitest (its exact-version peer links trip npm's resolver). Run that one install with `npx npm@11 install ...`, then check that `npm ci` (npm 10, as in CI) still works with the new lockfile.
 - **Merging stacked PRs:** wait until GitHub has switched the second PR's base to `main` before merging it. Merged too early, it lands in the old branch instead of `main` (#16 had to be re-landed as #17).
-- **A stopped `next dev` can leave its server child on the port.** `next start` then fails (EADDRINUSE) and the tests hit the old dev server. Check with `netstat -ano | grep :3123` and stop that `start-server.js` process.
+- **A stopped `next dev` or `next start` can leave its server child on the port** (stopping a background `npx next start` task only stops `npx`). `next start` then fails (EADDRINUSE) and the tests hit the old dev server. Check with `netstat -ano | grep :3123` and stop that `start-server.js` process.
 - **Phaser frame names can be numbers.** Compare `String(image.frame.name)`.
 - **three.js: screen-right is -x** when the camera looks down +z. Star Courier draws lanes at `sx(x) = -x`, so lane 0 is on the left.
 - **three.js: anything further away than the fog far distance turns into fog colour.** Sky objects (planet, ring, stars) need their own materials with `fog: false`.
