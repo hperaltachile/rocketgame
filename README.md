@@ -25,10 +25,10 @@ Every game has fullscreen, on-screen touch controls on phones, sound, pause, and
 
 _Last updated 2026-11-14._
 
-- **Live:** all 9 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel.
-- **Next release (in review):** **Astro Hop**, a retro platformer with three worlds (Clover Plains, Crystal Caves, Sky Bridges). Live once its PR is merged.
-- **Latest release:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
-- **Before that** ([#13](https://github.com/hperaltachile/rocketgame/pull/13)):
+- **Live:** all 10 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel.
+- **Latest release:** **Astro Hop**, a retro platformer with three worlds: Clover Plains, Crystal Caves and Sky Bridges ([#19](https://github.com/hperaltachile/rocketgame/pull/19)).
+- **Before that:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
+- **Earlier** ([#13](https://github.com/hperaltachile/rocketgame/pull/13)):
   - Rocket Run got progressive difficulty in sectors.
   - Comet Kick became **Nova Shootout** and Star Slugger became **Cosmic Slam**, both redrawn as retro pixel art.
   - Old links redirect, and saved scores carry over.
