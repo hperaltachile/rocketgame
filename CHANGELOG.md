@@ -9,6 +9,45 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Astro Hop, a retro platformer
+
+- **Feature: Astro Hop 🦊**, a side-scrolling pixel-art platformer (Phaser).
+  - **Hero:** Kit, a little space fox with a red scarf and a backpack. Run, jump (hold Jump to go higher) and hold Run to go faster.
+  - **Three worlds:**
+    - 1-1 Clover Plains teaches the basics.
+    - 1-2 Crystal Caves has low ceilings, more enemies and Boing frogs.
+    - 1-3 Sky Bridges has floating islands, bridges and moving platforms.
+  - **Enemies:**
+    - Grumbles: stomp them.
+    - Shellbots: stomp one into a shell, then kick the shell into other enemies.
+    - Boing frogs: they hop around their platform.
+  - **Blocks and power-ups:**
+    - ⭐ blocks give star coins, a Star Seed (Kit grows big and can break bricks) or a Comet Berry (Kit throws bouncing sparks with Run).
+    - Hidden blocks hold extra lives.
+    - 100 star coins give an extra life.
+  - **Each world ends at a beacon pole:** touching it higher scores more, then Kit boards a rocket that blasts off while the leftover time turns into points.
+  - **Also:** a level clock, three lives, a checkpoint in every world, an intro card, floating points, parallax skies, an original chiptune per world and synthesized sounds.
+- **Tests:**
+  - Unit tests cover the physics (walls, jump height, bridges, moving platforms), blocks, power-ups, enemies, the level flow and the save.
+  - Every level is checked to be well formed and reachable without Run.
+  - A test autopilot that walks (never runs) plays every world and must reach the beacon with at most one lost life.
+  - New browser test `scripts/e2e/hop.mjs`; the game is also in the `fullscreen` suite.
+- **Design decisions:**
+  - The game was asked for as a copy of a famous plumber platformer. We kept the genre and its classic feel (stomping, bumping blocks, a power-up that makes you big, a goal pole, a level clock) but made everything original and space-themed: no copied characters, names, art, sounds, music or level layouts.
+  - Kind to kids:
+    - A hit with a Comet Berry only takes the berry away.
+    - Coyote time and jump buffering make jumps forgiving.
+    - Corner bumps slide past blocks.
+    - Every world has a checkpoint.
+    - Worlds you reach stay unlocked, so a game over never sends you back to 1-1.
+    - Every gap can be cleared without running.
+  - Levels are plain text (`lib/games/astro-hop/levels.ts`) so new worlds are easy to add.
+- **Changes:**
+  - New Astro Hop sounds in `games/shared/sfx.ts`.
+  - `TouchLayout` has a new `row` option that puts action buttons side by side. Astro Hop uses it for Jump and Run, so two buttons stay clear of the fullscreen corner buttons on short landscape phones.
+  - Astro Hop draws its own retro HUD in the canvas (score, stars, world, time, lives). The page frame only shows the score and best, so the fullscreen HUD doesn't run under the arrow pad.
+- **Fixes:** the `fullscreen` e2e suite gave every action button the same finger ID, so games with two buttons failed the multi-touch check.
+
 ## 2026-11-14: Security updates
 
 - **Fixes:**

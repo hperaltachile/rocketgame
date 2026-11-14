@@ -2,12 +2,13 @@
 
 Quick, free browser mini-games with a rockets-and-space theme — [rocketgame.app](https://rocketgame.app).
 
-Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action games), three.js (the 3D runner Star Courier) and plain React (puzzle games).
+Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action and platform games), three.js (the 3D runner Star Courier) and plain React (puzzle games).
 
 ## Games
 
 | Game             | Engine   | What it is                                                                                                   |
 | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| 🦊 Astro Hop     | Phaser   | Pixel-art platformer: run and jump Kit the space fox through three worlds to the beacon.                     |
 | 📦 Star Courier  | three.js | 3D three-lane runner: dodge crates, laser gates and freighters while Gloop the space-jelly chases you.       |
 | 🚀 Rocket Run    | Phaser   | Boost through an asteroid field. Gets harder over six sectors: wobbly rocks, rock gates, comets, rock walls. |
 | ⚽ Nova Shootout | Phaser   | Pixel-art penalty kicks against Bolt the robot goalie (Easy, Medium, Hard).                                  |
@@ -25,6 +26,7 @@ Every game has fullscreen, on-screen touch controls on phones, sound, pause, and
 _Last updated 2026-11-14._
 
 - **Live:** all 9 games at [rocketgame.app](https://rocketgame.app), deployed from `main` by Vercel.
+- **Next release (in review):** **Astro Hop**, a retro platformer with three worlds (Clover Plains, Crystal Caves, Sky Bridges). Live once its PR is merged.
 - **Latest release:** **Star Courier**, the first 3D game (three.js, [#15](https://github.com/hperaltachile/rocketgame/pull/15)), with missions, the Hangar shop and records ([#17](https://github.com/hperaltachile/rocketgame/pull/17)).
 - **Before that** ([#13](https://github.com/hperaltachile/rocketgame/pull/13)):
   - Rocket Run got progressive difficulty in sectors.
@@ -32,6 +34,7 @@ _Last updated 2026-11-14._
   - Old links redirect, and saved scores carry over.
 - **Open follow-ups:**
   - Try Star Courier on a real phone (swipes, fullscreen, sound).
+  - Try Astro Hop on a real phone and with a kid: the touch pad plus Jump and Run buttons, and whether the worlds feel fair. More worlds can be added as rows of text in `lib/games/astro-hop/levels.ts`.
   - `npm audit` still lists 8 moderate warnings in lint-only tooling (`minimatch` under `typescript-eslint`). Update `eslint-config-next` once a fixed `typescript-eslint` ships.
   - Test Nova Shootout and Cosmic Slam on a real iPhone (the WebKit e2e suite needs Playwright, which isn't installed).
   - Old links take two redirects (`/games/comet-kick` → `/games/nova-shootout/` → `/games/nova-shootout`); make it one.

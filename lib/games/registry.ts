@@ -1,4 +1,5 @@
 export type GameSlug =
+  | "astro-hop"
   | "rocket-run"
   | "star-courier"
   | "nova-shootout"
@@ -28,6 +29,17 @@ export type GameInfo = {
 };
 
 export const GAMES: readonly GameInfo[] = [
+  {
+    slug: "astro-hop",
+    name: "Astro Hop",
+    tagline: "Run, jump and stomp through three pixel worlds.",
+    description:
+      "Help Kit the space fox hop across Clover Plains, Crystal Caves and Sky Bridges! Bop Grumbles, kick Shellbot shells, bump star blocks for power-ups and reach the beacon in this retro platformer.",
+    icon: "🦊",
+    engine: "phaser",
+    best: { label: "Best", direction: "high" },
+    available: true,
+  },
   {
     slug: "rocket-run",
     name: "Rocket Run",

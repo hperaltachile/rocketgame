@@ -21,6 +21,10 @@ export function GameLoading() {
  * the server.
  */
 const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
+  "astro-hop": dynamic(() => import("@/games/astro-hop/AstroHop"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
   "rocket-run": dynamic(() => import("@/games/rocket-run/RocketRun"), {
     ssr: false,
     loading: GameLoading,

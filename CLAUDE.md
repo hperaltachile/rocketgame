@@ -34,7 +34,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 - **Suites:**
   - `fullscreen` covers every game; `GAMES=snake,2048` limits it.
-  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`, `courier`.
+  - Per game: `rocket`, `snake`, `2048`, `puzzles`, `shootout`, `slam`, `courier`, `hop`.
   - Also `home` (layout, JS size, PWA) and `copy` (site text).
 - **Run `fullscreen` one game at a time** (a loop over `GAMES=<slug>`). Headless Chrome refuses a second native-fullscreen request in the same tab.
 - **Screenshots** go to `scripts/e2e/out/` (git-ignored).
@@ -69,6 +69,8 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 | `lib/games/rocket-run/autopilot.ts` | Test-only autopilot that flies whole runs through `stepRun`; the difficulty-curve tests use it. |
 | `lib/games/star-courier/` | Star Courier rules: `config.ts` (every tuning number), `chunks.ts` (hand-made track pieces, sectors, `routeExists`), `logic.ts` (`newRun`/`stepRun`), `worlds.ts` (one entry per world), `couriers.ts` (couriers, suits, prices), `progress.ts` (the save, missions, rank, Daily Delivery, shop) and a test-only `autopilot.ts`. |
 | `games/star-courier/` | The three.js side: `createGame.ts` (loop, pooling, events → sounds and effects), `models.ts` (every 3D model, built from simple shapes), `world.ts` (sky, fog, track, skyline from a `worlds.ts` entry), `effects.ts` (particles, shake), `names.ts` (power-up names and colours without three.js), `Hud.tsx`, `Hangar.tsx` (shop, missions, records) and the page `StarCourier.tsx`. |
+| `lib/games/astro-hop/` | Astro Hop rules: `config.ts` (every tuning number), `levels.ts` (the worlds as rows of text, with the tile legend), `logic.ts` (`newGame`/`step`, physics, enemies, blocks, flow; pushes `events`) and a test-only `autopilot.ts`. |
+| `games/astro-hop/` | `art.ts` (every texture, level chunks, parallax skies), `scenes.ts` (draws the game state each frame, turns events into sounds and effects, music per world) and the page `AstroHop.tsx`. |
 | `games/shared/music.ts` | Tiny looping chiptune player (melody + bass from a tempo, scale and note steps). |
 
 **GameShell** handles, for every game:
@@ -82,7 +84,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 
 **Engines:**
 - **Phaser 3.90**, pinned and aliased to the arcade-physics build in `next.config.ts`:
-  - Used for Rocket Run, Snake, Nova Shootout and Cosmic Slam.
+  - Used for Rocket Run, Snake, Nova Shootout, Cosmic Slam and Astro Hop.
   - Phaser is downloaded only after the first Start.
 - **three.js 0.186.1**, pinned, for the 3D runner Star Courier:
   - downloaded only after the first Start (`ThreeGame` + a dynamic `import("./createGame")`)
@@ -114,6 +116,18 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
    - listen through `bridge.listen` and report through `onScore`/`onOver`/`onState`
 7. Sounds go in `games/shared/sfx.ts` (synthesized only).
 8. Update `CREDITS.md` and the About credits if anything new is used, add a `CHANGELOG.md` entry, and run the `fullscreen` e2e suite for the game.
+
+### Astro Hop: levels and feel
+
+- **Edit or add a world** in `lib/games/astro-hop/levels.ts`: 15 rows of text per level, one character per tile (legend at the top of the file). Then run `npm test`: it checks the level is well formed, that the beacon is reachable without Run, and that the walking autopilot clears it with at most one lost life. Pick its look with `theme` (`plains`, `caves`, `sky`).
+- **Level rules for kids:**
+  - Gaps of 3 tiles or less (a walking jump clears about 4).
+  - Moving platforms come within 1 tile of the land at each end of their trip.
+  - No enemy waiting where Kit lands after a blind jump (over a wall, onto an island).
+  - Tunnels at least 2 tiles high, so Big Kit fits.
+- **Tune the feel** with `PHYS` in `config.ts` (speeds, jump, gravity, coyote time, jump buffer). The jump-height and gap tests in `logic.test.ts` and the autopilot catch changes that make levels impossible.
+- **The camera works in art pixels.** The scene zooms in 4× (`RENDER_SCALE` × 2) with its origin at the top left, so `camera.scrollX` is the level x at the left edge. Textures are shown at scale 1 (one art pixel per world unit), unlike the other pixel games (`ART = 3`).
+- **The scene field can't be called `game` or `sound`:** those names are taken by `Phaser.Scene`. The rules state is `this.hop`.
 
 ### Star Courier: worlds and difficulty
 
@@ -165,6 +179,7 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **Hints and results drawn in the canvas still need a screen-reader line:** a `role=status` element with `data-game-message`. It also carries `data-phase` (and `data-pitch` in Cosmic Slam), which the e2e tests read.
 - **Difficulty curves ease toward a cap** (exponential approach, no steps). New obstacles arrive in named sectors, with a short breather. Every wave must leave a gap of at least `MIN_GAP`. Tune with the autopilot tests in `lib/games/rocket-run/logic.test.ts`: nearly everyone clears sector 1, the crash rate rises sector by sector, and a typical run lasts about a minute.
 - **Fullscreen corners on short landscape phones only fit two buttons** (Pause and 🎮 controls). Other settings (sound, vibration) belong on the Paused screen.
+- **Short landscape phones fit about three HUD boxes above the arrow pad** (score, best and one stat). Games with more numbers draw them in the canvas, like Astro Hop's top bar. With two action buttons, set `touch.row` so they sit side by side.
 
 ## Gotchas (learned the hard way)
 
@@ -194,4 +209,5 @@ BASE=https://rocketgame.app node scripts/e2e/cdp.mjs scripts/e2e/shootout.mjs
 - **Don't import values from `createGame.ts` or `models.ts` into the page.** That pulls three.js into the page bundle, before Start. Shared names and colours live in `games/star-courier/names.ts`; type-only imports are fine.
 - **The chaser can block the camera.** Gloop sits between the camera and the courier, so it's scaled down, trails between lanes a little slowly, and its eyes are on stalks so it reads from behind.
 - **Tall page extras go in GameShell's `below` slot, not `controls`.** `controls` sits above the board, and a big panel there (like Star Courier's Hangar) pushes the board off screen; the `fullscreen` suite's "whole board visible" check catches it.
+- **Parsing a level while blanking its spawn tiles:** look at the original row (`def.rows`), not the grid being edited. Astro Hop once turned each `HHH` platform into three overlapping ones.
 - **Pixel textures need `setFilter(NEAREST)`** (`addTexture` does it). Draw shapes with the `Pixels` methods, pixel by pixel; canvas paths get anti-aliased edges.
