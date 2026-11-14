@@ -8,7 +8,7 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, Neon Postgres (leader
 
 | Game                  | Engine   | What it is                                                                                                   |
 | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
-| 🔦 Hide & Seek: Mazes | Phaser   | Top-down stealth: hide from Peeka the robot in a moonbase house for 1:45, round after round.                 |
+| 🔦 Hide & Seek: Mazes | Phaser   | Top-down stealth: hide from Peeka the robot in moonbase houses for 1:45, round after round.                  |
 | 🦊 Astro Hop          | Phaser   | Pixel-art platformer: run and jump Kit the space fox through three worlds to the beacon.                     |
 | 📦 Star Courier       | three.js | 3D three-lane runner: dodge crates, laser gates and freighters while Gloop the space-jelly chases you.       |
 | 🚀 Rocket Run         | Phaser   | Boost through an asteroid field. Gets harder over six sectors: wobbly rocks, rock gates, comets, rock walls. |
@@ -36,7 +36,7 @@ _Last updated 2026-11-14._
   - Old links redirect, and saved scores carry over.
 - **Open follow-ups:**
   - Play Hide & Seek: Mazes with a kid and on a real phone: is round 1 winnable but not trivial, are the thumb stick and the Hide button comfortable, are the "?"/"!" cues and the ✓ marks understood? Tune `lib/games/hide-and-seek/config.ts` (the balance tests guard the curve).
-  - Hide & Seek: separate music and sound-effect volume sliders (the brief asked for them; every game uses the site-wide sound switch for now), and more houses.
+  - Hide & Seek: separate music and sound-effect volume sliders (the brief asked for them; every game uses the site-wide sound switch for now).
   - Try Star Courier on a real phone (swipes, fullscreen, sound).
   - Try Astro Hop on a real phone and with a kid: the touch pad plus Jump and Run buttons, and whether the worlds feel fair. More worlds can be added as rows of text in `lib/games/astro-hop/levels.ts`.
   - Play a few games on a real phone and save a score to the Top 10 (all testing so far used emulated phones).

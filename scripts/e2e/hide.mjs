@@ -1,4 +1,4 @@
-// Hide & Seek: Mazes: start, countdown, walk to a spot, hide and exit, pause freezes the timer, restart resets.
+// Hide & Seek: Mazes: house picker, start, countdown, walk to a spot, hide and exit, pause freezes the timer, restart resets.
 const BASE = process.env.BASE ?? "http://localhost:3123";
 
 export default async function scenario(page) {
@@ -43,6 +43,17 @@ export default async function scenario(page) {
   await page.viewport(1280, 900);
   await page.goto(BASE + "/games/hide-and-seek");
   assert((await overlay()) === "Ready?", "start screen shows");
+  const houses = await page.eval(
+    `[...document.querySelectorAll("[aria-label='Start in house'] button")].map((b) => b.textContent.trim()).join("|")`,
+  );
+  assert(
+    houses.split("|").length >= 3,
+    `house picker lists houses (${houses})`,
+  );
+  assert(
+    (await data("house")) === "moonbase",
+    "Moonbase House is the default start",
+  );
   await page.click("[role=dialog] button.btn-primary");
   assert(
     await waitFor(

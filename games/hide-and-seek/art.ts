@@ -1,6 +1,6 @@
 /**
  * Every texture of Hide & Seek: Mazes, drawn in code as top-down pixel art:
- * the Moonbase House (floors, walls, star windows, furniture), the hiding
+ * the houses (floors, walls, star windows, furniture), the hiding
  * spots (closed, opened, with you peeking out), the kid astronaut, Peeka the
  * robot, and the little icons and HUD pieces.
  */
@@ -8,13 +8,9 @@
 import Phaser from "phaser";
 import { TILE, VIEW_W } from "@/lib/games/hide-and-seek/config";
 import {
-  COLS,
-  FURNITURE,
-  MAP,
-  ROOMS,
-  ROWS,
   roomAt,
   type FurnitureKind,
+  type HouseDef,
 } from "@/lib/games/hide-and-seek/house";
 import type { Grid } from "@/lib/games/hide-and-seek/nav";
 import { textWidth } from "@/lib/pixelFont";
@@ -42,8 +38,15 @@ const METAL = ["#c9d1e8", "#9aa4c4", "#6f7899"];
 
 // ------------------------------------------------------------------ house
 
-function floorTile(p: Pixels, x: number, y: number, c: number, r: number) {
-  const room = roomAt(c, r);
+function floorTile(
+  p: Pixels,
+  house: HouseDef,
+  x: number,
+  y: number,
+  c: number,
+  r: number,
+) {
+  const room = roomAt(house, c, r);
   const [light, dark] = room.colors;
   switch (room.floor) {
     case "carpet":
@@ -64,18 +67,31 @@ function floorTile(p: Pixels, x: number, y: number, c: number, r: number) {
       p.rect(x, y + 15, TILE, 1, dark).rect(x + 15, y, 1, TILE, dark);
       p.px(x + 2, y + 2, dark).px(x + 13, y + 13, dark);
       break;
+    case "grass": {
+      p.rect(x, y, TILE, TILE, light);
+      const rng = seeded(c * 13 + r * 17);
+      for (let k = 0; k < 6; k++) {
+        const gx = x + Math.floor(rng() * 15);
+        const gy = y + Math.floor(rng() * 14);
+        p.rect(gx, gy, 1, 2, dark);
+      }
+      if (rng() < 0.15) p.px(x + 8, y + 8, "#ffd166");
+      break;
+    }
   }
 }
 
 function wallTile(
   p: Pixels,
+  house: HouseDef,
   x: number,
   y: number,
   c: number,
   r: number,
   window: boolean,
 ) {
-  const solidBelow = r + 1 < ROWS && "#O".includes(MAP[r + 1][c]);
+  const { map } = house;
+  const solidBelow = r + 1 < map.length && "#O".includes(map[r + 1][c]);
   p.rect(x, y, TILE, TILE, WALL.top);
   p.dither(x, y, TILE, TILE, null, WALL.topLight, 0.2);
   if (!solidBelow) {
@@ -316,6 +332,105 @@ export function furnitureArt(
     case "chair":
       p.rect(3, 3, W - 6, H - 6, WOOD[1]).rect(3, 3, W - 6, 2, WOOD[2]);
       break;
+    case "rover": {
+      // A little moon buggy seen from above: body, cockpit, six wheels.
+      for (const wx of [2, W / 2 - 3, W - 8])
+        p.rect(wx, 0, 6, 3, INK).rect(wx, H - 3, 6, 3, INK);
+      p.rect(1, 3, W - 2, H - 6, "#f2f2f8").rect(1, 3, W - 2, 2, WHITE);
+      p.rect(W - 14, 6, 10, H - 12, "#4cc9f0").rect(W - 13, 7, 3, 2, "#c8f4ff");
+      p.rect(4, 7, 14, 3, "#ff7a2f").rect(4, H - 10, 14, 3, "#ff7a2f");
+      p.disc(10, H / 2, 3, METAL[1]);
+      if (open) p.rect(1, H - 7, 10, 4, "#0b1026");
+      if (peek) {
+        p.rect(1, H - 8, 10, 5, "#0b1026");
+        eyes(3, H - 7);
+      }
+      break;
+    }
+    case "planter": {
+      p.rect(1, 2, W - 2, H - 3, "#8a5a2f").rect(2, 3, W - 4, H - 5, "#5b3a1e");
+      for (let x = 4; x < W - 3; x += 6) {
+        p.disc(x, 7, 2.5, "#45d983");
+        p.px(x, 5, "#ffd166");
+      }
+      break;
+    }
+    case "hedge": {
+      p.disc(W / 2, H / 2 + 1, 7, "#1f8a4c");
+      p.disc(W / 2 - 3, H / 2 - 2, 4, "#2fbf6f");
+      p.disc(W / 2 + 3, H / 2, 4, "#26a85f");
+      p.disc(W / 2, H / 2 - 4, 3, "#45d983");
+      if (open) p.disc(W / 2, H / 2 + 2, 3, "#0b1026");
+      if (peek) {
+        p.disc(W / 2, H / 2 + 2, 3, "#0b1026");
+        eyes(W / 2 - 3, H / 2 + 1);
+      }
+      break;
+    }
+    case "bunk": {
+      p.rect(1, 1, W - 2, H - 2, METAL[2]);
+      p.rect(2, 2, W - 4, H - 4, "#e8ecff");
+      p.rect(3, 4, W - 6, 7, WHITE);
+      p.rect(2, 13, W - 4, H - 15, "#ff9f1c");
+      for (let y = 17; y < H - 4; y += 6) p.rect(4, y, W - 8, 1, "#ffd166");
+      p.rect(W - 4, 2, 2, H - 4, METAL[1]);
+      for (let y = 6; y < H - 4; y += 5) p.rect(W - 5, y, 3, 1, METAL[2]);
+      if (open) p.rect(2, H - 6, W - 6, 4, "#0b1026");
+      if (peek) {
+        p.rect(3, H - 7, W - 8, 5, "#0b1026");
+        eyes(W / 2 - 5, H - 6);
+      }
+      break;
+    }
+    case "tent": {
+      // A blanket fort: a striped blanket over chairs, with a door flap.
+      p.rect(1, 2, W - 2, H - 3, "#c4b5fd");
+      for (let x = 1; x < W - 1; x += 6) p.rect(x, 2, 3, H - 3, "#a78bfa");
+      p.rect(1, 2, W - 2, 2, "#ede7ff");
+      p.poly(
+        [
+          [W / 2 - 6, H - 1],
+          [W / 2, H - 12],
+          [W / 2 + 6, H - 1],
+        ],
+        open || peek ? "#0b1026" : "#7c5cc4",
+      );
+      if (peek) eyes(W / 2 - 3, H - 7);
+      break;
+    }
+    case "beanbag": {
+      p.disc(W / 2 - 5, H / 2 - 4, 7, "#e2504c");
+      p.disc(W / 2 + 6, H / 2 - 2, 7, "#ffd166");
+      p.disc(W / 2 - 2, H / 2 + 6, 7, "#4cc9f0");
+      p.disc(W / 2 - 7, H / 2 - 7, 2, "#ff8a7a");
+      p.disc(W / 2 + 4, H / 2 - 5, 2, "#fff0a8");
+      if (open) p.disc(W / 2 + 3, H / 2 + 5, 4, "#0b1026");
+      if (peek) {
+        p.disc(W / 2 + 3, H / 2 + 5, 4, "#0b1026");
+        eyes(W / 2, H / 2 + 4);
+      }
+      break;
+    }
+    case "arcade":
+      p.rect(1, 1, W - 2, H - 2, "#5b3fa8").rect(2, 2, W - 4, 6, "#1b2140");
+      p.rect(3, 3, W - 6, 4, "#7ee8c9");
+      p.disc(5, 11, 1.5, "#e2504c").disc(10, 11, 1.5, "#ffd166");
+      break;
+    case "curtain": {
+      const folds = (x0: number, x1: number) => {
+        for (let x = x0; x < x1; x++)
+          for (let y = 1; y < H - 1; y++)
+            p.px(x, y, (y + x) % 4 < 2 ? "#b23a48" : "#e2504c");
+      };
+      p.rect(0, 0, W, 2, "#ffd166");
+      if (open) folds(1, 5);
+      else folds(1, W - 1);
+      if (peek) {
+        p.rect(W / 2 - 2, H / 2 - 3, 4, 6, "#0b1026");
+        p.px(W / 2 - 1, H / 2 - 1, WHITE).px(W / 2, H / 2 - 1, WHITE);
+      }
+      break;
+    }
     case "rug": {
       p.rect(0, 0, W, H, "#ff9f1c");
       p.rect(2, 2, W - 4, H - 4, "#5b3fa8");
@@ -333,14 +448,15 @@ export function furnitureArt(
 }
 
 /** The whole house: floors, walls, windows and the furniture that isn't a hiding spot. */
-export function houseArt(): Pixels {
-  const p = new Pixels(COLS * TILE, ROWS * TILE);
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const ch = MAP[r][c];
+export function houseArt(house: HouseDef): Pixels {
+  const { map } = house;
+  const p = new Pixels(map[0].length * TILE, map.length * TILE);
+  for (let r = 0; r < map.length; r++) {
+    for (let c = 0; c < map[0].length; c++) {
+      const ch = map[r][c];
       const x = c * TILE;
       const y = r * TILE;
-      if (ch === "#" || ch === "O") wallTile(p, x, y, c, r, ch === "O");
+      if (ch === "#" || ch === "O") wallTile(p, house, x, y, c, r, ch === "O");
       else if (ch === "d") {
         p.rect(x, y, TILE, TILE, METAL[1]);
         p.rect(x, y, TILE, TILE, METAL[1]).dither(
@@ -353,10 +469,10 @@ export function houseArt(): Pixels {
           0.3,
         );
         p.rect(x + 1, y + 7, TILE - 2, 2, "#ff9f1c");
-      } else floorTile(p, x, y, c, r);
+      } else floorTile(p, house, x, y, c, r);
     }
   }
-  for (const f of FURNITURE) {
+  for (const f of house.furniture) {
     if (f.spot) continue;
     p.stamp(furnitureArt(f.kind, f.w, f.h), f.col * TILE, f.row * TILE);
   }
@@ -541,9 +657,11 @@ export function labelArt(text: string, fill: string, color = WHITE): Pixels {
 
 /** The minimap background: rooms and walls, 2 px per tile. */
 export function minimapArt(grid: Grid): Pixels {
-  const p = new Pixels(COLS * 2 + 2, ROWS * 2 + 2);
+  const { map, rooms } = grid.house;
+  const cols = grid.cols;
+  const p = new Pixels(cols * 2 + 2, grid.rows * 2 + 2);
   p.rect(0, 0, p.w, p.h, "rgba(11,16,38,0.85)");
-  for (const room of ROOMS) {
+  for (const room of rooms) {
     p.rect(
       1 + room.col * 2,
       1 + room.row * 2,
@@ -552,10 +670,10 @@ export function minimapArt(grid: Grid): Pixels {
       room.colors[1],
     );
   }
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (MAP[r][c] === "d") p.rect(1 + c * 2, 1 + r * 2, 2, 2, "#8590b3");
-      else if (grid.furniture[r * COLS + c] >= 0)
+  for (let r = 0; r < grid.rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (map[r][c] === "d") p.rect(1 + c * 2, 1 + r * 2, 2, 2, "#8590b3");
+      else if (grid.furniture[r * cols + c] >= 0)
         p.rect(1 + c * 2, 1 + r * 2, 2, 2, "rgba(20,12,44,0.45)");
     }
   }
@@ -602,23 +720,36 @@ export function statusArt(text: string, color: string): Pixels {
   return p;
 }
 
-/** Every static texture of the game. */
-export function makeArt(scene: Phaser.Scene, grid: Grid) {
-  addTexture(scene, "hs-house", houseArt());
-  addSheet(scene, "hs-astro", astronautFrames());
-  addSheet(scene, "hs-peeka", peekaFrames());
+/** Texture keys of one house (drawn the first time it's needed). */
+export const houseKeys = (grid: Grid) => ({
+  house: `hs-house-${grid.house.id}`,
+  minimap: `hs-minimap-${grid.house.id}`,
+  spot: (id: string) => `hs-spot-${grid.house.id}-${id}`,
+});
+
+/** The textures of one house: the house itself, its hiding spots and its minimap. */
+export function makeHouseArt(scene: Phaser.Scene, grid: Grid) {
+  const keys = houseKeys(grid);
+  if (scene.textures.exists(keys.house)) return;
+  addTexture(scene, keys.house, houseArt(grid.house));
   for (const spot of grid.spots) {
     const f = spot.furniture;
-    addSheet(scene, `hs-spot-${spot.id}`, [
+    addSheet(scene, keys.spot(spot.id), [
       furnitureArt(f.kind, f.w, f.h, 0),
       furnitureArt(f.kind, f.w, f.h, 1),
       furnitureArt(f.kind, f.w, f.h, 2),
     ]);
   }
+  addTexture(scene, keys.minimap, minimapArt(grid));
+}
+
+/** Every texture shared by all houses. */
+export function makeArt(scene: Phaser.Scene) {
+  addSheet(scene, "hs-astro", astronautFrames());
+  addSheet(scene, "hs-peeka", peekaFrames());
   addTexture(scene, "hs-q", bubbleArt("?", "#7c5cc4"));
   addTexture(scene, "hs-bang", bubbleArt("!", "#e2504c"));
   addTexture(scene, "hs-check", checkArt());
-  addTexture(scene, "hs-minimap", minimapArt(grid));
   const dot = new Pixels(6, 6).rect(1, 1, 4, 4, "#ff7a2f").outline(WHITE);
   addTexture(scene, "hs-dot", dot);
   const ping = new Pixels(6, 6).ring(2.5, 2.5, 2.5, 2.5, "#c4b5fd");

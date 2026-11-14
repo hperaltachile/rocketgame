@@ -2,10 +2,13 @@
 
 import { useEffect, useEffectEvent, useRef } from "react";
 import GameShell from "@/components/GameShell";
+import { useStoredRaw } from "@/components/hooks";
 import PhaserGame from "@/components/PhaserGame";
 import { ROUND } from "@/lib/games/hide-and-seek/config";
+import { HOUSES } from "@/lib/games/hide-and-seek/houses";
 import { NO_INPUT, type Input } from "@/lib/games/hide-and-seek/state";
 import type { Direction } from "@/lib/input";
+import { writeJSON } from "@/lib/storage";
 import PixelLogo from "../shared/PixelLogo";
 import Stage from "../shared/Stage";
 import { usePhaserShell } from "../shared/usePhaserShell";
@@ -30,6 +33,14 @@ const KEYS: Record<string, Control> = {
   ShiftRight: "run",
 };
 
+const START_KEY = "rocketgame:hide-and-seek:start";
+
+/** The saved start house, or the first one if the save is missing or odd. */
+function parseStart(raw: string | null): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 && n < HOUSES.length ? n : 0;
+}
+
 const ACT_KEYS = new Set(["KeyE", "Space", "Enter"]);
 
 const PAD: Record<Direction, [number, number]> = {
@@ -44,6 +55,7 @@ export default function HideAndSeek() {
     Exclude<HideCommand, { type: "start" | "pause" | "resume" }>,
     HideState
   >("hide-and-seek");
+  const startHouse = parseStart(useStoredRaw(START_KEY));
 
   // Held controls from each source, combined into one Input for the game.
   const held = useRef({
@@ -78,6 +90,7 @@ export default function HideAndSeek() {
 
   const start = () => {
     releaseAll();
+    bridge.send({ type: "setup", house: startHouse });
     shellProps.onStart();
   };
 
@@ -183,6 +196,25 @@ export default function HideAndSeek() {
           {state?.hint && <p className="mt-2">💡 {state.hint}</p>}
         </>
       }
+      controls={
+        <div
+          role="group"
+          aria-label="Start in house"
+          className="flex flex-wrap gap-2"
+        >
+          {HOUSES.map((house, i) => (
+            <button
+              key={house.id}
+              type="button"
+              aria-pressed={startHouse === i}
+              className={startHouse === i ? "btn-primary" : "btn-secondary"}
+              onClick={() => writeJSON(START_KEY, i)}
+            >
+              {house.name}
+            </button>
+          ))}
+        </div>
+      }
       howToPlay={
         <ul>
           <li>
@@ -210,6 +242,11 @@ export default function HideAndSeek() {
             Each round Peeka gets a little smarter, and it remembers your
             favourite spots!
           </li>
+          <li>
+            Every round is in the next house:{" "}
+            {HOUSES.map((h) => h.name).join(", ")}. Pick the house to start in
+            above the game.
+          </li>
         </ul>
       }
     >
@@ -221,6 +258,7 @@ export default function HideAndSeek() {
         data-phase={status === "playing" ? (state?.phase ?? "") : ""}
         data-time={playing ? state.time : ""}
         data-round={playing ? state.round : ""}
+        data-house={playing ? state.house : HOUSES[startHouse].id}
         data-hidden={playing ? String(state.hidden) : ""}
         data-prompt={playing ? (state.prompt ?? "") : ""}
         data-seeker={playing ? state.seeker : ""}

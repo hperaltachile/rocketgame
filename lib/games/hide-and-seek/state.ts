@@ -5,13 +5,15 @@
 
 import { shuffle, type Rng } from "../rng";
 import { ROUND, seekerTuning, TILE, type SeekerTuning } from "./config";
-import { PLAYER_START, ROOMS, SEEKER_START, type Room } from "./house";
+import { roomAt, type Room } from "./house";
+import { HOUSES } from "./houses";
 import {
-  buildGrid,
   centerOf,
+  gridFor,
   isSolid,
   lineOfSight,
   type Grid,
+  type Point,
   type Tile,
 } from "./nav";
 
@@ -67,7 +69,10 @@ export type Seeker = {
   /** Facing, radians (0 = right, π/2 = down). */
   angle: number;
   mode: SeekerMode;
-  path: Tile[];
+  /** Points to walk to, in order (tile centres, smoothed as Peeka walks). */
+  path: Point[];
+  /** The tile Peeka was on last step (for doorway pauses). */
+  tile: string;
   /** Standing still (doorway pause, reaction) for this long. */
   wait: number;
   /** Sweeping the flashlight around for this long. */
@@ -148,6 +153,8 @@ export type Game = {
   seeker: Seeker;
   /** How often you hid in each spot this game (Peeka learns from it). */
   hideCounts: Record<string, number>;
+  /** Index into HOUSES of the first round's house. */
+  firstHouse: number;
   /** Close call armed: Peeka came near your spot. */
   closeArmed: boolean;
   closeCalls: number;
@@ -156,12 +163,15 @@ export type Game = {
   events: GameEvent[];
 };
 
-const grid = buildGrid();
+/** Which house a round is played in: the first one picked, then the next, and around. */
+export const houseIndex = (firstHouse: number, round: number) =>
+  (firstHouse + round - 1) % HOUSES.length;
 
-export function newGame(rng: Rng = Math.random): Game {
+export function newGame(rng: Rng = Math.random, firstHouse = 0): Game {
   const game = {
     rng,
-    grid,
+    firstHouse: ((firstHouse % HOUSES.length) + HOUSES.length) % HOUSES.length,
+    grid: gridFor(firstHouse),
     phase: "countdown",
     phaseT: 0,
     round: 1,
@@ -183,8 +193,10 @@ export function newGame(rng: Rng = Math.random): Game {
 
 /** Puts everyone back at the start for the next round (score and learning stay). */
 export function resetRound(game: Game) {
-  const p = centerOf(PLAYER_START);
-  const s = centerOf(SEEKER_START);
+  game.grid = gridFor(houseIndex(game.firstHouse, game.round));
+  const house = game.grid.house;
+  const p = centerOf(house.playerStart);
+  const s = centerOf(house.seekerStart);
   game.phase = "countdown";
   game.phaseT = 0;
   game.time = ROUND.duration;
@@ -210,6 +222,7 @@ export function resetRound(game: Game) {
     angle: -Math.PI / 2,
     mode: "count",
     path: [],
+    tile: "",
     wait: 0,
     look: 0,
     glimpse: 0,
@@ -231,9 +244,19 @@ export function spotById(game: Game, id: string) {
   return game.grid.spots.find((s) => s.id === id)!;
 }
 
-export function roomById(id: string): Room {
-  return ROOMS.find((r) => r.id === id)!;
+export function roomById(game: Game, id: string): Room {
+  return game.grid.house.rooms.find((r) => r.id === id)!;
 }
+
+/** The room name at a point (art px). */
+export function roomNameAt(game: Game, x: number, y: number): string {
+  return roomAt(game.grid.house, Math.floor(x / TILE), Math.floor(y / TILE))
+    .name;
+}
+
+/** Peeka learns hiding habits by kind of furniture ("always the wardrobe!"), across houses. */
+export const habitKey = (game: Game, spotId: string) =>
+  spotById(game, spotId).furniture.kind;
 
 /** Peeka checked this spot recently and still remembers it was empty. */
 export function remembered(game: Game, id: string): boolean {
@@ -290,7 +313,7 @@ export function catchPlayer(game: Game, reason: CaughtReason) {
 /** A fresh shuffled patrol lap of every room. */
 export function patrolLap(game: Game, skip?: string): string[] {
   const rooms = shuffle(
-    ROOMS.map((r) => r.id).filter((id) => id !== skip),
+    game.grid.house.rooms.map((r) => r.id).filter((id) => id !== skip),
     game.rng,
   );
   return rooms;
@@ -298,14 +321,15 @@ export function patrolLap(game: Game, skip?: string): string[] {
 
 /** The walkable tile nearest a room's middle (Peeka's waypoint for the room). */
 export function roomWaypoint(game: Game, id: string): Tile {
-  const room = roomById(id);
+  const room = roomById(game, id);
+  const house = game.grid.house;
   const cx = room.col + (room.w - 1) / 2;
   const cy = room.row + (room.h - 1) / 2;
   let best: Tile = [room.col, room.row];
   let bestD = Infinity;
   for (let r = room.row; r < room.row + room.h; r++) {
     for (let c = room.col; c < room.col + room.w; c++) {
-      if (isSolid(game.grid, c, r)) continue;
+      if (isSolid(game.grid, c, r) || roomAt(house, c, r).id !== id) continue;
       const d = (c - cx) ** 2 + (r - cy) ** 2;
       if (d < bestD) {
         bestD = d;
