@@ -184,6 +184,45 @@ export const sfx = {
     noise(0.2, 2200, 0.2);
     tone(700, 1400, 0.1, "square", 0.04);
   },
+  // Astro Hop
+  jump: () => tone(260, 760, 0.16, "square", 0.045),
+  /** Star coin: a three-note twinkle. */
+  coin: () => {
+    note(1568, 0, 0.05, "triangle", 0.06);
+    note(2093, 0.04, 0.08, "triangle", 0.06);
+    note(2637, 0.08, 0.16, "triangle", 0.05);
+  },
+  stomp: () => {
+    tone(520, 120, 0.12, "square", 0.07);
+    noise(0.05, 1200, 0.1);
+  },
+  /** Head meets block. */
+  bump: () => tone(150, 90, 0.08, "triangle", 0.22),
+  thud: () => tone(110, 70, 0.06, "square", 0.07),
+  /** Something rises out of a star block. */
+  sprout: () => tone(300, 900, 0.35, "triangle", 0.07),
+  oneUp: () => jingle([659, 880, 1047, 1319, 1175, 1568], 0.07, "triangle"),
+  spark: () => {
+    tone(900, 300, 0.1, "square", 0.04);
+    noise(0.05, 4000, 0.05, "highpass");
+  },
+  /** An enemy knocked out by a shell, spark or bumped block. */
+  bonk: () => tone(700, 180, 0.15, "square", 0.06),
+  kickShell: () => {
+    tone(300, 150, 0.06, "square", 0.08);
+    noise(0.04, 2000, 0.12);
+  },
+  poleSlide: () => tone(1200, 300, 0.9, "triangle", 0.05),
+  liftoff: () => {
+    noise(1.6, 900, 0.16);
+    tone(80, 300, 1.4, "sawtooth", 0.04);
+  },
+  tick: () => note(1760, 0, 0.03, "square", 0.02),
+  hurry: () => jingle([880, 988, 880, 988, 1047], 0.07),
+  /** Kit loses a life: a friendly tumble down the scale. */
+  oops: () => jingle([523, 494, 466, 440, 392, 330], 0.11, "triangle"),
+  gameOverTune: () => jingle([392, 330, 262, 196], 0.22, "triangle"),
+  clearTune: () => jingle([523, 659, 784, 1047, 988, 1047, 1319], 0.1),
   /** Gloop the jelly gives you a squishy hug. */
   gloop: () => {
     tone(320, 90, 0.5, "sine", 0.22);

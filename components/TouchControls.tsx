@@ -17,6 +17,11 @@ export type TouchLayout = {
   pad?: boolean;
   /** Big buttons on the right. */
   actions?: TouchAction[];
+  /**
+   * Put the buttons side by side (first one on the right) instead of in a
+   * column, so two of them stay clear of the corner buttons on short screens.
+   */
+  row?: boolean;
 };
 
 /** Short buzz on press, if the device can and the player hasn't turned it off. */
@@ -213,7 +218,11 @@ export default function TouchControls({
         </div>
       )}
       {layout.actions && layout.actions.length > 0 && onAction && (
-        <div className="tc-right pointer-events-auto absolute bottom-20 flex flex-col-reverse gap-3">
+        <div
+          className={`tc-right pointer-events-auto absolute bottom-20 flex gap-3 ${
+            layout.row ? "flex-row-reverse items-end" : "flex-col-reverse"
+          }`}
+        >
           {layout.actions.map((action) => (
             <ActionButton key={action.id} action={action} onAction={onAction} />
           ))}

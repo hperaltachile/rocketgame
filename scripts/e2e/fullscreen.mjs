@@ -4,6 +4,7 @@ const ONLY = process.env.GAMES?.split(",");
 
 // What each game should show in fullscreen on a touch screen.
 const GAMES = {
+  "astro-hop": { pad: true, actions: ["jump", "run"], landscape: true },
   "rocket-run": { pad: false, actions: ["boost"], landscape: true },
   snake: { pad: true, actions: [], landscape: false },
   2048: { pad: true, actions: [], landscape: false },
@@ -185,9 +186,9 @@ export default async function scenario(page) {
         const p = await page.center("[data-touch-pad]");
         pts.push({ x: p.x + p.w * 0.35, y: p.y, id: 1 });
       }
-      for (const id of spec.actions) {
+      for (const [i, id] of spec.actions.entries()) {
         const c = await page.center(`[data-touch-action="${id}"]`);
-        pts.push({ x: c.x, y: c.y, id: 2 });
+        pts.push({ x: c.x, y: c.y, id: 2 + i });
       }
       const v0 = await page.eval("window.__vib || 0");
       await page.touch("touchStart", pts);
