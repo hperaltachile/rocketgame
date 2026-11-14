@@ -44,9 +44,9 @@ export const GAMES: readonly GameInfo[] = [
   {
     slug: "astro-hop",
     name: "Astro Hop",
-    tagline: "Run, jump and stomp through three pixel worlds.",
+    tagline: "Run, jump and stomp through 8 pixel levels and two fortresses.",
     description:
-      "Help Kit the space fox hop across Clover Plains, Crystal Caves and Sky Bridges! Bop Grumbles, kick Shellbot shells, bump star blocks for power-ups and reach the beacon in this retro platformer.",
+      "Help Kit the space fox hop across plains, crystal caves and sky bridges, then sneak through lava fortresses past spinning fire bars to face Big Clank! Bop Grumbles, kick Shellbot shells and bump star blocks for power-ups in this retro platformer.",
     icon: "🦊",
     engine: "phaser",
     best: { label: "Best", direction: "high" },

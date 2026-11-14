@@ -1,5 +1,10 @@
 import Phaser from "phaser";
-import { STEP, TILE, VIEW_W } from "@/lib/games/astro-hop/config";
+import { FIREBAR, STEP, TILE, VIEW_W } from "@/lib/games/astro-hop/config";
+import {
+  blipBox,
+  blipRising,
+  fireBarOrbs,
+} from "@/lib/games/astro-hop/hazards";
 import type { Theme } from "@/lib/games/astro-hop/levels";
 import {
   newGame,
@@ -20,6 +25,7 @@ import { textWidth } from "@/lib/pixelFont";
 import {
   BLOCK_FRAME,
   BOING_FRAME,
+  CLANK_FRAME,
   hudArt,
   ENEMY_FRAME,
   KIT_FRAME,
@@ -43,6 +49,8 @@ export type HopState = {
   coins: number;
   lives: number;
   phase: Phase;
+  /** Big Clank's state in a fortress ("sleep", "pace", "down"), or "". */
+  boss: string;
   /** Read out to screen readers. */
   message: string;
 };
@@ -89,6 +97,18 @@ const TUNES: Record<Theme, Tune> = {
       2, 3, 4, 2, 1, 0, -1, -1, -1,
     ],
     bassline: [0, 0, 3, 3, 2, 2, 4, 4, 0, 0, 3, 3, 1, 1, 4, 4],
+  },
+  fortress: {
+    bpm: 132,
+    root: 196,
+    scale: [0, 1, 3, 5, 7, 8, 10],
+    lead: "square",
+    bass: "triangle",
+    melody: [
+      0, -1, 0, 1, 2, -1, 1, 0, 4, -1, 3, -1, 2, -1, -1, -1, 0, -1, 0, 1, 2, -1,
+      4, 5, 4, -1, 2, -1, 1, -1, -1, -1,
+    ],
+    bassline: [0, 0, 0, 0, 5, 5, 5, 5, 3, 3, 3, 3, 4, 4, 1, 1],
   },
 };
 
@@ -142,6 +162,11 @@ export class HopScene extends Phaser.Scene {
   private rocket!: Phaser.GameObjects.Image;
   private flame!: Phaser.GameObjects.Image;
   private beacon: Phaser.GameObjects.Image | null = null;
+  private lavaTops: Phaser.GameObjects.Image[] = [];
+  private orbs: Phaser.GameObjects.Image[][] = [];
+  private blips: Phaser.GameObjects.Image[] = [];
+  private clank: Phaser.GameObjects.Image | null = null;
+  private switchImage: Phaser.GameObjects.Image | null = null;
   private intro: Phaser.GameObjects.GameObject[] = [];
   private hud!: Phaser.Textures.CanvasTexture;
   private hudImage!: Phaser.GameObjects.Image;
@@ -363,6 +388,41 @@ export class HopScene extends Phaser.Scene {
           this.banner("ah-b-clear", 90, 900);
           this.message = "Level clear!";
           break;
+        case "lava":
+          this.message = "Ouch, lava! Kit lost a life.";
+          break;
+        case "bossWake":
+          this.playSfx(sfx.bossWake);
+          this.banner("ah-b-clank", 80, 900);
+          this.message =
+            "Big Clank! Stomp it three times, or jump over it and press the power switch.";
+          break;
+        case "bossHit":
+          this.playSfx(sfx.bossHit);
+          this.message = "Clonk! Big Clank got bopped.";
+          break;
+        case "bossDown": {
+          this.playSfx(sfx.bossDown);
+          this.banner("ah-b-power", 80, 900);
+          this.message = "Power off! Big Clank floats away, grumbling.";
+          const boss = this.hop.boss;
+          if (boss && !reduced) {
+            this.burst(
+              boss.x + boss.w / 2,
+              boss.y + 6,
+              [0xffd166, 0x9aa6d8],
+              8,
+            );
+          }
+          break;
+        }
+        case "bolt":
+          this.playSfx(sfx.boltToss);
+          break;
+        case "switch":
+          this.stopMusic();
+          this.playSfx(sfx.switchClick);
+          break;
         case "gameOver":
           this.playSfx(sfx.gameOverTune);
           this.finish();
@@ -396,6 +456,7 @@ export class HopScene extends Phaser.Scene {
       coins: g.coins,
       lives: g.lives,
       phase: g.phase,
+      boss: g.boss?.state ?? "",
       message: this.message,
     };
     const json = JSON.stringify(state);
@@ -481,6 +542,11 @@ export class HopScene extends Phaser.Scene {
     this.intro = [];
     this.particles = [];
     this.beacon = null;
+    this.lavaTops = [];
+    this.orbs = [];
+    this.blips = [];
+    this.clank = null;
+    this.switchImage = null;
   }
 
   private addBlock(col: number, row: number, ch: string) {
@@ -566,6 +632,48 @@ export class HopScene extends Phaser.Scene {
       }),
     );
 
+    // Fortress: the shimmering lava surface, fire bars, blips, Big Clank.
+    g.grid.forEach((cells, row) =>
+      cells.forEach((ch, col) => {
+        if (ch === "~" && g.grid[row - 1]?.[col] !== "~") {
+          this.lavaTops.push(
+            keep(
+              this.add
+                .image(col * TILE, row * TILE, "ah-lava", 0)
+                .setOrigin(0)
+                .setDepth(1.2),
+            ),
+          );
+        }
+      }),
+    );
+    this.orbs = g.fireBars.map(() =>
+      Array.from({ length: FIREBAR.orbs - 1 }, () =>
+        keep(this.add.image(0, 0, "ah-orb", 0).setDepth(12)),
+      ),
+    );
+    this.blips = g.blips.map(() =>
+      keep(this.add.image(0, 0, "ah-blip", 0).setDepth(1.1).setVisible(false)),
+    );
+    if (g.boss) {
+      this.clank = keep(
+        this.add.image(0, 0, "ah-clank", 0).setOrigin(0.5, 1).setDepth(9),
+      );
+    }
+    if (g.goal.kind === "switch") {
+      this.switchImage = keep(
+        this.add
+          .image(
+            g.goal.switchCol * TILE + TILE / 2,
+            (g.goal.switchRow + 1) * TILE,
+            "ah-switch",
+            0,
+          )
+          .setOrigin(0.5, 1)
+          .setDepth(2),
+      );
+    }
+
     for (const m of g.movers) {
       this.movers.set(
         m.id,
@@ -580,7 +688,8 @@ export class HopScene extends Phaser.Scene {
       this.add
         .image(g.goal.poleX - 1, g.goal.flagY, "ah-flag")
         .setOrigin(1, 0)
-        .setDepth(2),
+        .setDepth(2)
+        .setVisible(g.goal.kind === "pole"),
     );
     this.flame = keep(
       this.add
@@ -664,6 +773,7 @@ export class HopScene extends Phaser.Scene {
       this.movers.get(m.id)?.setPosition(Math.round(m.x), Math.round(m.y));
     }
 
+    this.drawFortress(anim);
     this.drawThings(anim);
     this.drawKit();
 
@@ -753,6 +863,7 @@ export class HopScene extends Phaser.Scene {
         Math.round(it.y + it.h + 1),
       );
     }
+    for (const bolt of g.bolts) seen.add(bolt.id);
     for (const s of g.sparks) {
       seen.add(s.id);
       const image = this.sprite(s.id, "ah-spark");
@@ -765,6 +876,64 @@ export class HopScene extends Phaser.Scene {
         this.sprites.delete(id);
       }
     }
+  }
+
+  private drawFortress(anim: number) {
+    const g = this.hop;
+    const lavaFrame = Math.floor(g.clock * 3) % 2;
+    for (const image of this.lavaTops) image.setFrame(lavaFrame);
+    g.fireBars.forEach((bar, i) => {
+      const boxes = fireBarOrbs(bar, g.clock);
+      this.orbs[i]?.forEach((image, j) => {
+        const box = boxes[j + 1];
+        image
+          .setPosition(
+            Math.round(box.x + box.w / 2),
+            Math.round(box.y + box.h / 2),
+          )
+          .setFrame((anim + j) % 2);
+      });
+    });
+    g.blips.forEach((blip, i) => {
+      const box = blipBox(blip, g.clock);
+      const image = this.blips[i];
+      if (!image) return;
+      image.setVisible(box !== null);
+      if (box) {
+        image
+          .setPosition(Math.round(box.x + box.w / 2), Math.round(box.y + 5))
+          .setFrame(anim % 2)
+          .setFlipY(!blipRising(blip, g.clock));
+      }
+    });
+    const boss = g.boss;
+    if (boss && this.clank) {
+      let frame: number = Math.floor(anim / 2) % 2;
+      if (boss.state === "down") frame = CLANK_FRAME.down;
+      else if (boss.hurt > 0)
+        frame = Math.floor(boss.hurt * 10) % 2 ? CLANK_FRAME.hurt : 0;
+      else if (boss.y + boss.h < boss.floor - 1) frame = CLANK_FRAME.hop;
+      else if (boss.state === "sleep") frame = 0;
+      this.clank
+        .setFrame(frame)
+        .setFlipX(boss.facing > 0)
+        .setPosition(
+          Math.round(boss.x + boss.w / 2),
+          Math.round(boss.y + boss.h),
+        )
+        .setVisible(boss.y + boss.h > -8);
+    }
+    for (const bolt of g.bolts) {
+      const image = this.sprite(bolt.id, "ah-bolt");
+      image
+        .setOrigin(0.5)
+        .setFrame(anim % 2)
+        .setPosition(
+          Math.round(bolt.x + bolt.w / 2),
+          Math.round(bolt.y + bolt.h / 2),
+        );
+    }
+    this.switchImage?.setFrame(g.goal.switched ? 1 : 0);
   }
 
   private drawKit() {

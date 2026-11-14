@@ -186,6 +186,29 @@ export const sfx = {
   },
   // Astro Hop
   jump: () => tone(260, 760, 0.16, "square", 0.045),
+  /** Big Clank wakes up: a low, grumpy two-note honk. */
+  bossWake: () => {
+    note(110, 0, 0.18, "square", 0.07);
+    note(98, 0.2, 0.3, "square", 0.07);
+    noise(0.15, 400, 0.06);
+  },
+  /** A stomp or spark lands on Big Clank: a metal clonk. */
+  bossHit: () => {
+    tone(420, 180, 0.14, "square", 0.08);
+    note(1320, 0, 0.08, "triangle", 0.05);
+  },
+  /** Big Clank powers down: a falling whirr and a sputter. */
+  bossDown: () => {
+    tone(600, 60, 0.9, "sawtooth", 0.05);
+    noise(0.5, 900, 0.06, "bandpass");
+  },
+  boltToss: () => tone(700, 300, 0.1, "triangle", 0.05),
+  /** The power switch clicks off. */
+  switchClick: () => {
+    noise(0.04, 3000, 0.12, "highpass");
+    note(880, 0.03, 0.06, "square", 0.05);
+    note(660, 0.1, 0.1, "square", 0.05);
+  },
   /** Star coin: a three-note twinkle. */
   coin: () => {
     note(1568, 0, 0.05, "triangle", 0.06);

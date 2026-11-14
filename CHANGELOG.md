@@ -9,6 +9,30 @@ What changed on RocketGame, newest first. Each entry lists:
 
 PR numbers link to GitHub. Add an entry in the same PR as the change.
 
+## 2026-11-14: Astro Hop: World 2 and the fortresses
+
+- **Feature: five new levels**, for 8 in all. Each world now runs plains → caves → sky → fortress:
+  - **1-4 Molten Fortress** finishes World 1.
+  - **2-1 Meteor Meadows**, **2-2 Glowworm Grotto** and **2-3 Nebula Heights** are harder takes on the first three: Shellbots in pairs, tall tubes and staircases, frogs on bridges, brick ceilings to break, longer island chains and lifts.
+  - **2-4 Cinder Citadel** is the last level: faster fire bars, more blips and a quicker Big Clank.
+- **Feature: fortresses** (new `fortress` theme: stone halls, arched windows, torches, and a tense minor-key chiptune):
+  - **Lava** (`~`) costs a life at any size, like a pit.
+  - **Fire bars** (`*` clockwise, `%` counter-clockwise): a chain of plasma orbs spinning round a block. A hit works like an enemy hit (Big Kit shrinks).
+  - **Lava blips** (`^`) hop out of the lava on a timer and fall back.
+  - **Big Clank** (`Z`), a grumpy moon robot with a jet pack, waits on a bridge (`=`) at the end. It paces, hops and tosses slow bouncing bolts. Beat it with 3 stomps (it flashes, harmless, between hits) or 5 sparks, or jump over it and press the **power switch** (`S`). Either way its power goes off and it floats away, then Kit takes the rocket from an open-roofed room.
+  - Fire bars and blips move on a fixed loop set by the level clock, so their rhythm can be learned (`lib/games/astro-hop/hazards.ts`). Big Clank lives in `boss.ts`.
+  - New sounds: Big Clank waking, getting bopped and powering down, a bolt toss and the switch click.
+- **Change: a compact world picker.** Eight buttons, each with a picture and the level id ("🏰 1-4"), with the full name read out to screen readers and shown under the buttons. It fits on one row on desktop.
+- **Design decisions:**
+  - The owner asked for levels "following" the famous plumber platformer. We followed the structure (four levels per world, with a castle stage at the end) and the genre's classic hazards, but every layout, name, character and drawing is original.
+  - Big Clank is beaten with a power switch or stomps, and floats away. There's no lava death and no collapsing bridge: kinder for kids, and not the famous ending.
+  - New levels are added after the old ones, so saved "furthest level" values still point at the same levels.
+- **Tests:**
+  - `fortress.test.ts`: lava, fire bar turning and hits, blip timing, Big Clank (waking, pacing, stomps, sparks, bolts, a fresh boss after a lost life), the switch, and winning after 2-4.
+  - Level tests per level: one goal (pole or switch), Big Clank on its bridge with open sky over the rocket, lava pits of 3 tiles or less, fire bars clear of the start, checkpoint and landings. A perfect run through all 8 levels stays under the Top 10 cap.
+  - The test autopilot looks ahead near hazards (it plays the next moment out on a copy of the game and waits or jumps when walking on would hurt). It clears every level with at most one lost life.
+  - `hop.mjs` checks the 8-level picker and opens 1-4, 2-2 and 2-4 (Big Clank present).
+
 ## 2026-11-14: Hide & Seek: more houses, smoother Peeka
 
 - **Feature: three houses** (`lib/games/hide-and-seek/houses.ts`):

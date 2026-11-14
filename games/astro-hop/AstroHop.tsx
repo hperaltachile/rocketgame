@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useRef } from "react";
 import GameShell from "@/components/GameShell";
 import { useStoredRaw } from "@/components/hooks";
 import PhaserGame from "@/components/PhaserGame";
-import { LEVELS } from "@/lib/games/astro-hop/levels";
+import { LEVELS, type Theme } from "@/lib/games/astro-hop/levels";
 import {
   NO_INPUT,
   parseUnlocked,
@@ -47,6 +47,14 @@ const TOUCH = {
     { id: "jump", label: "Jump", icon: "⬆️" },
     { id: "run", label: "Run", icon: "💨" },
   ],
+};
+
+/** A little picture per kind of level, for the compact world picker. */
+const THEME_ICON: Record<Theme, string> = {
+  plains: "🌿",
+  caves: "💎",
+  sky: "☁️",
+  fortress: "🏰",
 };
 
 const titleCase = (name: string) =>
@@ -180,7 +188,7 @@ export default function AstroHop() {
       overMessage={
         won ? (
           <p>
-            Kit made it through all {LEVELS.length} worlds with{" "}
+            Kit made it through all {LEVELS.length} levels with{" "}
             {score.toLocaleString("en-US")} points!
           </p>
         ) : (
@@ -192,27 +200,36 @@ export default function AstroHop() {
         )
       }
       controls={
-        <div
-          role="group"
-          aria-label="Start at world"
-          className="flex flex-wrap gap-2"
-        >
-          {LEVELS.map((level, i) => {
-            const locked = i > unlocked;
-            return (
-              <button
-                key={level.id}
-                type="button"
-                aria-pressed={startLevel === i}
-                disabled={locked}
-                className={startLevel === i ? "btn-primary" : "btn-secondary"}
-                onClick={() => writeJSON(START_KEY, i)}
-              >
-                {locked ? "🔒 " : ""}
-                {level.id} {titleCase(level.name)}
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div
+            role="group"
+            aria-label="Start at world"
+            className="flex flex-wrap gap-1.5"
+          >
+            {LEVELS.map((level, i) => {
+              const locked = i > unlocked;
+              const name = `World ${level.id}: ${titleCase(level.name)}`;
+              return (
+                <button
+                  key={level.id}
+                  type="button"
+                  aria-pressed={startLevel === i}
+                  aria-label={locked ? `${name} (locked)` : name}
+                  title={name}
+                  disabled={locked}
+                  className={`${startLevel === i ? "btn-primary" : "btn-secondary"} min-w-11 px-2.5 tabular-nums`}
+                  onClick={() => writeJSON(START_KEY, i)}
+                >
+                  <span aria-hidden="true">
+                    {locked ? "🔒" : THEME_ICON[level.theme]} {level.id}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-sm opacity-80" aria-hidden="true">
+            {titleCase(LEVELS[startLevel].name)}
+          </p>
         </div>
       }
       howToPlay={
@@ -238,6 +255,12 @@ export default function AstroHop() {
             checkpoint, and reach the beacon pole before time runs out. Touch it
             high for more points, then Kit blasts off to the next world!
           </li>
+          <li>
+            <strong>Fortresses:</strong> don&apos;t touch the lava, and time
+            your way past spinning fire bars and hopping lava blips. At the end,
+            stomp Big Clank three times, or jump over it and press the power
+            switch!
+          </li>
         </ul>
       }
     >
@@ -250,6 +273,7 @@ export default function AstroHop() {
         data-world={playing ? state.world : LEVELS[startLevel].id}
         data-time={playing ? state.time : ""}
         data-lives={playing ? state.lives : ""}
+        data-boss={playing ? state.boss : ""}
       >
         {status === "playing" ? (state?.message ?? "") : ""}
       </p>

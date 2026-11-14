@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FLOW, KIT, PHYS, POINTS, ROWS, TILE, TIMER } from "./config";
-import type { LevelDef } from "./levels";
+import { LEVELS, type LevelDef } from "./levels";
 import {
   chainPoints,
   newGame,
@@ -428,7 +428,7 @@ describe("saved progress", () => {
   it("reads the furthest level reached, repairing odd values", () => {
     expect(parseUnlocked(null)).toBe(0);
     expect(parseUnlocked("2")).toBe(2);
-    expect(parseUnlocked("99")).toBe(2);
+    expect(parseUnlocked("99")).toBe(LEVELS.length - 1);
     expect(parseUnlocked("-3")).toBe(0);
     expect(parseUnlocked("1.5")).toBe(0);
     expect(parseUnlocked("{oops")).toBe(0);

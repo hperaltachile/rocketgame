@@ -474,6 +474,34 @@ const PALETTES: Record<Theme, Palette> = {
     bridge: "#7ee8f0",
     bridgeDark: "#2b9fb0",
   },
+  fortress: {
+    sky: ["#0a0618", "#1a0f2e", "#2e1236"],
+    stars: false,
+    grass: "#8f86b8",
+    grassDark: "#4a4170",
+    dirt: "#4a4170",
+    dirtDark: "#2c2550",
+    pebble: "#ff9f5a",
+    brick: "#6b5fa0",
+    brickDark: "#463c78",
+    mortar: "#1a1234",
+    hard: "#7a74a8",
+    hardLight: "#b4aee0",
+    hardDark: "#3a3466",
+    tube: "#c2410c",
+    tubeLight: "#fdba74",
+    tubeDark: "#7c2d12",
+    bridge: "#b08968",
+    bridgeDark: "#5c3d24",
+  },
+};
+
+const LAVA = {
+  top: "#fff27a",
+  hot: "#ffb347",
+  mid: "#ff6b1a",
+  deep: "#c2290c",
+  dark: "#7a1206",
 };
 
 function brickArt(pal: Palette): Pixels {
@@ -532,6 +560,7 @@ function hardArt(pal: Palette): Pixels {
 }
 
 function groundArt(pal: Palette, theme: Theme, top: boolean, seed: number) {
+  if (theme === "fortress") return stoneArt(pal, top, seed);
   const p = new Pixels(16, 16).rect(0, 0, 16, 16, pal.dirt);
   const rng = seeded(seed);
   for (let i = 0; i < 5; i++) {
@@ -556,6 +585,64 @@ function groundArt(pal: Palette, theme: Theme, top: boolean, seed: number) {
       p.px(2, 0, "#c8ffb0").px(9, 1, "#c8ffb0");
     }
   }
+  return p;
+}
+
+/** Fortress walls and floors: big, slightly uneven stone blocks. */
+function stoneArt(pal: Palette, top: boolean, seed: number): Pixels {
+  const p = new Pixels(16, 16).rect(0, 0, 16, 16, pal.dirt);
+  const rng = seeded(seed);
+  p.rect(0, 7, 16, 1, pal.mortar).rect(0, 15, 16, 1, pal.mortar);
+  p.rect(seed % 2 ? 5 : 10, 0, 1, 7, pal.mortar);
+  p.rect(seed % 2 ? 12 : 3, 8, 1, 7, pal.mortar);
+  p.rect(0, 0, 16, 1, pal.hardLight).rect(0, 8, 16, 1, pal.hard);
+  for (let i = 0; i < 4; i++) {
+    p.px(Math.floor(rng() * 16), 1 + Math.floor(rng() * 14), pal.dirtDark);
+  }
+  if (top) {
+    p.rect(0, 0, 16, 2, pal.grass).rect(0, 2, 16, 1, pal.grassDark);
+    p.px(5, 0, "#d6d0f5").px(12, 1, "#d6d0f5");
+  }
+  return p;
+}
+
+/** Lava below the surface: a deep, dithered glow. */
+function lavaFillArt(): Pixels {
+  const p = new Pixels(16, 16).rect(0, 0, 16, 16, LAVA.deep);
+  p.dither(0, 8, 16, 8, null, LAVA.dark, 0.35);
+  p.px(4, 3, LAVA.mid).px(11, 6, LAVA.mid).px(7, 11, LAVA.mid);
+  return p;
+}
+
+/** The lava surface, two frames that shimmer (shown over the level art). */
+function lavaTopArt(frame: number): Pixels {
+  const p = new Pixels(16, 16).rect(0, 4, 16, 12, LAVA.deep);
+  p.rect(0, 4, 16, 4, LAVA.mid);
+  for (let x = 0; x < 16; x++) {
+    const wave = Math.round(Math.sin((x + frame * 4) * (Math.PI / 4)) * 1.2);
+    p.rect(x, 3 + wave, 1, 2, LAVA.hot);
+    p.px(x, 3 + wave, LAVA.top);
+  }
+  p.dither(0, 10, 16, 6, null, LAVA.dark, 0.3);
+  p.px(frame ? 3 : 10, 7, LAVA.top).px(frame ? 12 : 5, 9, LAVA.hot);
+  return p;
+}
+
+/** Big Clank's bridge: planks on a chain. */
+function bossBridgeArt(pal: Palette): Pixels {
+  const p = new Pixels(16, 16);
+  p.rect(0, 0, 16, 6, pal.bridge).rect(0, 0, 16, 1, "#e6c9a8");
+  p.rect(0, 5, 16, 1, pal.bridgeDark);
+  p.rect(7, 0, 1, 6, pal.bridgeDark).rect(15, 0, 1, 6, pal.bridgeDark);
+  p.px(3, 2, pal.bridgeDark).px(11, 3, pal.bridgeDark);
+  for (let x = 1; x < 16; x += 4) p.ring(x + 1, 8, 1.5, 1.5, "#9aa6d8");
+  return p;
+}
+
+/** A fire bar's block: a hard block with a glowing pivot. */
+function pivotArt(pal: Palette): Pixels {
+  const p = hardArt(pal);
+  p.disc(8, 8, 3.5, INK).disc(8, 8, 2.5, LAVA.mid).px(7, 7, LAVA.top);
   return p;
 }
 
@@ -679,6 +766,9 @@ export function levelChunks(grid: Grid, theme: Theme, poleTop: number) {
   const ceiling = ceilingEdgeArt(pal);
   const underside = undersideArt(pal);
   const bridge = bridgeArt(pal, theme);
+  const bossBridge = bossBridgeArt(pal);
+  const lava = lavaFillArt();
+  const pivot = pivotArt(pal);
   const tubes = new Map<string, Pixels>();
   const tube = (side: "left" | "right", rim: "top" | "bottom" | null) => {
     const key = `${side}-${rim}`;
@@ -705,13 +795,24 @@ export function levelChunks(grid: Grid, theme: Theme, poleTop: number) {
           const above = at(grid, col, row - 1);
           const below = at(grid, col, row + 1);
           if (above !== "#" && row > 0) p.stamp(tops[variant], x, y);
-          else if (theme === "caves" && below !== "#" && row < ROWS - 1)
+          else if (
+            (theme === "caves" || theme === "fortress") &&
+            below !== "#" &&
+            row < ROWS - 1
+          )
             p.stamp(ceiling, x, y);
           else p.stamp(fills[variant], x, y);
         } else if (ch === "X" || ch === "F") {
           p.stamp(hard, x, y);
         } else if (ch === "_") {
           p.stamp(bridge, x, y);
+        } else if (ch === "=") {
+          p.stamp(bossBridge, x, y);
+        } else if (ch === "*" || ch === "%") {
+          p.stamp(pivot, x, y);
+        } else if (ch === "~" && at(grid, col, row - 1) === "~") {
+          // The surface row is an animated image in the scene.
+          p.stamp(lava, x, y);
         } else if (ch === "T") {
           const side = at(grid, col - 1, row) === "T" ? "right" : "left";
           const above = at(grid, col, row - 1);
@@ -756,6 +857,10 @@ function skyArt(theme: Theme): Pixels {
     p.disc(60, 30, 5, "#ffffff").disc(58, 28, 4, "#e8f6ff");
   } else if (theme === "sky") {
     p.disc(80, 70, 34, "#ffb3c7").disc(72, 62, 28, "#ffd1dc");
+  } else if (theme === "fortress") {
+    // A warm glow rising from the lava below.
+    p.dither(0, 150, p.w, 90, null, "#5a1a2a", 0.35);
+    p.dither(0, 200, p.w, 40, null, "#8a2a1a", 0.3);
   } else {
     p.dither(0, 0, p.w, 60, null, "#2a1d5c", 0.25);
   }
@@ -801,6 +906,21 @@ function farArt(theme: Theme): Pixels {
       );
       if (rng() < 0.5) p.px(x + 8, 240 - h + 6, "#7ee8f0");
     }
+  } else if (theme === "fortress") {
+    // Stone walls with tall arched windows, lit from inside.
+    p.rect(0, 30, p.w, 210, "#1e1538");
+    for (let x = 0; x < p.w; x += 24) p.rect(x, 30, 1, 210, "#170f2c");
+    for (let y = 46; y < 240; y += 16) p.rect(0, y, p.w, 1, "#170f2c");
+    for (let i = 0; i < 4; i++) {
+      const wx = 30 + i * 90;
+      p.rect(wx, 80, 18, 50, "#3a1a3a");
+      p.disc(wx + 9, 80, 9, "#3a1a3a");
+      p.rect(wx + 2, 84, 14, 46, "#ff9f5a");
+      p.disc(wx + 9, 84, 7, "#ff9f5a");
+      p.rect(wx + 8, 78, 2, 52, "#3a1a3a").rect(wx + 2, 104, 14, 2, "#3a1a3a");
+    }
+    // Battlements along the top.
+    for (let x = 0; x < p.w; x += 20) p.rect(x, 20, 12, 10, "#1e1538");
   } else {
     // A far-off sea of clouds, deep below the bridges.
     p.rect(0, 232, p.w, 8, "#8a3a7a");
@@ -845,6 +965,24 @@ function nearArt(theme: Theme): Pixels {
         ] as Point[],
         "#33246b",
       );
+    }
+  } else if (theme === "fortress") {
+    // Hanging chains and torches.
+    for (let x = 20; x < p.w; x += 90) {
+      const cx = x + Math.floor(rng() * 20);
+      const len = 30 + Math.floor(rng() * 40);
+      for (let y = 0; y < len; y += 4) p.ring(cx, y + 2, 1.5, 2, "#4a4170");
+      const tx = cx + 45;
+      p.rect(tx - 1, 120, 3, 12, "#3a3466");
+      p.poly(
+        [
+          [tx - 3, 120],
+          [tx + 0.5, 110],
+          [tx + 4, 120],
+        ] as Point[],
+        "#ff9f5a",
+      );
+      p.disc(tx + 0.5, 117, 1.5, "#fff27a");
     }
   } else {
     for (let i = 0; i < 4; i++) {
@@ -964,6 +1102,137 @@ function debrisArt(theme: Theme): Pixels {
   return p.outline(INK);
 }
 
+// ---------------------------------------------------------------- fortress things
+
+/** A fire bar's plasma orb. */
+function orbArt(frame: number): Pixels {
+  const p = new Pixels(8, 8);
+  p.disc(4, 4, 3.5, frame ? LAVA.mid : LAVA.deep);
+  p.disc(4, 4, 2.5, LAVA.hot).disc(3.5, 3.5, 1.2, LAVA.top);
+  return p;
+}
+
+/** A lava blip: a grumpy little lava ball (the scene flips it on the way down). */
+function blipArt(frame: number): Pixels {
+  const p = new Pixels(12, 14);
+  // A short flame trail under it.
+  p.poly(
+    [
+      [3, 8],
+      [6, frame ? 14 : 13],
+      [9, 8],
+    ] as Point[],
+    LAVA.mid,
+  );
+  p.disc(6, 6, 5, LAVA.deep).disc(6, 5.5, 4.4, LAVA.mid);
+  p.disc(5, 4.5, 2, LAVA.hot).px(4, 3, LAVA.top);
+  p.rect(3, 5, 2, 2, "#ffffff").rect(7, 5, 2, 2, "#ffffff");
+  p.px(4, 6, INK).px(7, 6, INK);
+  p.line(3, 4, 4, 4, INK).line(8, 4, 9, 4, INK);
+  return p.outline(INK);
+}
+
+/** One of Big Clank's bolts: a spinning hex nut. */
+function boltArt(frame: number): Pixels {
+  const p = new Pixels(10, 10);
+  const r = 4.5;
+  const pts = Array.from({ length: 6 }, (_, i) => {
+    const a = (i * Math.PI) / 3 + (frame ? Math.PI / 6 : 0);
+    return [5 + Math.cos(a) * r, 5 + Math.sin(a) * r] as Point;
+  });
+  p.poly(pts, "#9aa6d8");
+  p.disc(5, 5, 1.6, INK);
+  p.px(3, 3, "#e8ecff");
+  return p.outline(INK);
+}
+
+/** The power switch on its pedestal; frame 1 is switched off (pressed). */
+function switchArt(frame: number): Pixels {
+  const p = new Pixels(16, 16);
+  p.rect(2, 10, 12, 6, "#3a3466").rect(2, 10, 12, 1, "#7a74a8");
+  p.rect(4, 12, 8, 2, "#1a1234");
+  // The big round button.
+  const pressed = frame === 1;
+  const top = pressed ? 8 : 5;
+  p.rect(5, top + 2, 6, 10 - top - 2, "#5a6290");
+  p.ellipse(8, top + 2, 4, 2.5, pressed ? "#2f9e44" : "#b91c1c");
+  p.ellipse(8, top + 1.5, 3.5, 2, pressed ? "#7ee86a" : "#ff3b3b");
+  p.px(6, top + 1, "#ffffff");
+  return p.outline(INK);
+}
+
+export const CLANK_FRAME = {
+  walkA: 0,
+  walkB: 1,
+  hop: 2,
+  hurt: 3,
+  down: 4,
+} as const;
+
+/**
+ * Big Clank: a chunky, grumpy moon robot with a jet pack, facing left (the
+ * scene flips it). 32×34 art pixels, shown with its feet at the bottom.
+ */
+function clankArt(frame: number): Pixels {
+  const p = new Pixels(32, 34);
+  const hurt = frame === CLANK_FRAME.hurt;
+  const down = frame === CLANK_FRAME.down;
+  const body = hurt ? "#ffffff" : "#8b93c8";
+  const bodyDark = hurt ? "#c7d2fe" : "#535b96";
+  const trim = hurt ? "#ffd166" : "#e8590c";
+  // Jet pack on its back, with a flame unless it's powered down.
+  p.rect(23, 12, 6, 12, "#3a3466").rect(24, 13, 4, 10, "#5a6290");
+  if (!down) {
+    p.poly(
+      [
+        [24, 24],
+        [26, frame === CLANK_FRAME.walkB ? 30 : 28],
+        [28, 24],
+      ] as Point[],
+      "#ff9f5a",
+    );
+  } else {
+    p.disc(26, 26, 1.5, "#9aa6d8").disc(28, 23, 1, "#9aa6d8");
+  }
+  // Legs.
+  const step = frame === CLANK_FRAME.walkB ? 1 : 0;
+  const hop = frame === CLANK_FRAME.hop;
+  const legY = hop ? 26 : 27;
+  p.rect(7 + step, legY, 4, 34 - legY - 2, bodyDark);
+  p.rect(16 - step, legY, 4, 34 - legY - 2, bodyDark);
+  p.rect(5 + step, 31, 7, 3, "#3a3466").rect(15 - step, 31, 7, 3, "#3a3466");
+  // Barrel body with a belly panel.
+  p.rect(3, 12, 21, 16, bodyDark);
+  p.rect(4, 12, 19, 14, body);
+  p.rect(7, 16, 11, 7, "#3a3466").rect(
+    8,
+    17,
+    9,
+    5,
+    down ? "#3a3466" : "#4cc9f0",
+  );
+  if (!down) p.px(9, 18, "#ffffff").rect(13, 19, 3, 1, "#ffd166");
+  p.rect(3, 26, 21, 2, trim);
+  // Arm (the one throwing bolts).
+  p.rect(0, 15, 4, 9, bodyDark).rect(0, 23, 5, 3, "#3a3466");
+  // Dome head with a grumpy visor.
+  p.ellipse(13, 9, 9, 7, bodyDark);
+  p.ellipse(13, 8.5, 8.5, 6.5, body);
+  p.rect(5, 6, 15, 4, INK);
+  if (down) {
+    p.rect(7, 8, 4, 1, "#5a6290").rect(13, 8, 4, 1, "#5a6290");
+  } else {
+    p.rect(6, 7, 5, 2, "#ff3b3b").rect(13, 7, 5, 2, "#ff3b3b");
+    // Angry brows.
+    p.line(6, 5, 10, 6, INK).line(18, 5, 14, 6, INK);
+  }
+  p.rect(9, 12, 7, 1, INK);
+  // Antenna.
+  p.line(13, 2, 13, 0, bodyDark);
+  p.disc(13, 0, 1, down ? "#5a6290" : "#ffd166");
+  return p.outline(INK);
+}
+
 function pointsArt(text: string): Pixels {
   const p = new Pixels(textWidth(text) + 2, 9);
   p.text(text, 1, 1, "#ffffff");
@@ -999,6 +1268,14 @@ export function makeArt(scene: Phaser.Scene) {
     addTexture(scene, `ah-pts-${value}`, pointsArt(String(value)));
   }
   addTexture(scene, "ah-pts-1UP", pointsArt("1UP"));
+  addSheet(scene, "ah-orb", [0, 1].map(orbArt));
+  addSheet(scene, "ah-blip", [0, 1].map(blipArt));
+  addSheet(scene, "ah-bolt", [0, 1].map(boltArt));
+  addSheet(scene, "ah-switch", [0, 1].map(switchArt));
+  addSheet(scene, "ah-clank", [0, 1, 2, 3, 4].map(clankArt));
+  addSheet(scene, "ah-lava", [0, 1].map(lavaTopArt));
+  addBanner(scene, "ah-b-clank", "BIG CLANK!", BANNER.pink);
+  addBanner(scene, "ah-b-power", "POWER OFF!", BANNER.gold);
   addBanner(scene, "ah-b-clear", "LEVEL CLEAR!", BANNER.gold);
   addBanner(scene, "ah-b-hurry", "HURRY UP!", BANNER.pink);
   addBanner(scene, "ah-b-oops", "OOPS!", BANNER.violet);
