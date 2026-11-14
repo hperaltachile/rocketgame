@@ -446,7 +446,10 @@ export class HideScene extends Phaser.Scene {
       risky: exitRisk(g),
       seeker: g.seeker.mode,
       closeCalls: g.closeCalls,
-      message: statusText(g),
+      message:
+        g.phase === "countdown"
+          ? `${g.grid.house.name}, round ${g.round}. ${statusText(g)}`
+          : statusText(g),
       hint: caughtHint(g, g.caught),
     };
     const json = JSON.stringify(state);

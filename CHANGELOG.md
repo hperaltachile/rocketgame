@@ -16,6 +16,7 @@ PR numbers link to GitHub. Add an entry in the same PR as the change.
   - Each round is in the next house, round after round. A picker above the game chooses the house to start in (saved in `rocketgame:hide-and-seek:start`), and the round banner names the house.
   - Peeka's memory of your favourite spots is kept by kind of hiding spot (wardrobe, bed, plant...), so it carries over from house to house.
   - New furniture art: rover, planter, hedge, bunk bed, blanket fort, beanbags, arcade cabinet, curtain, and a grass floor.
+  - Screen readers hear the house and round at the start of each countdown (the canvas banner shows it to everyone else).
 - **Change: Peeka walks smoothly.** It used to walk from tile centre to tile centre, in grid-shaped zigzags. Now it skips ahead to any path point it can reach in a straight line without its body touching a wall or furniture (`clearLine` in `nav.ts`), so it cuts across open rooms and rounds corners. It still pauses at some doorways while patrolling.
 - **Tests:**
   - Every house test runs for every house, plus balance tests per house, a check that Peeka never clips anything while walking smoothly, and that it walks a shorter distance than the tile path.
