@@ -51,6 +51,7 @@ PR numbers link to GitHub. Add an entry in the same PR as the change.
   - New `games/shared/music.ts`: a tiny looping chiptune player.
   - New sounds in `games/shared/sfx.ts`.
   - The About page and `CREDITS.md` now list the game engines (Phaser and three.js, MIT).
+  - The README games table and Status list Star Courier.
 - **Design decisions:**
   - The game was asked for as a copy-style "train surfer" runner. We kept the genre and the engineering asks, but made the premise, chaser, power-ups and worlds original and space-themed. There's no roof running, hoverboard, jetpack, keys to continue or letter hunt.
   - There are no paid or currency continues: a run ends when it ends, which suits kids.

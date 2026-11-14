@@ -4,11 +4,12 @@
 
 Free, safe browser mini-games for kids (about 8–13) with a space theme, live at https://rocketgame.app.
 
-This file is the source of truth for how to work on the project: architecture, agreed design rules, and the lessons behind them. History (what changed, when, and why) lives in `CHANGELOG.md`.
+This file is the source of truth for how to work on the project: architecture, agreed design rules, and the lessons behind them. History (what changed, when, and why) lives in `CHANGELOG.md`. Current status (the games, what's live, open follow-ups) is in `README.md`.
 
 **Keep both up to date in the same PR as the change.**
 - New feature, fix or design decision → add a `CHANGELOG.md` entry.
 - New rule, pattern or gotcha → update this file.
+- Release or new follow-up → update the Status section of `README.md`.
 
 ## Commands
 
