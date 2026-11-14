@@ -2,7 +2,7 @@
 
 Quick, free browser mini-games with a rockets-and-space theme — [rocketgame.app](https://rocketgame.app).
 
-Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action games) and plain React (puzzle games).
+Built with Next.js (App Router), TypeScript, Tailwind CSS, Phaser 3 (action games), three.js (the 3D runner Star Courier) and plain React (puzzle games).
 
 ## Development
 
@@ -16,4 +16,4 @@ npm run format       # Prettier
 npm run build        # production build
 ```
 
-Game rules live in `lib/games/<slug>/` as plain TypeScript so they can be tested without React or Phaser.
+Game rules live in `lib/games/<slug>/` as plain TypeScript so they can be tested without React, Phaser or three.js.

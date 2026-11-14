@@ -12,6 +12,7 @@ const GAMES = {
   memory: { pad: false, actions: [], landscape: false },
   "nova-shootout": { pad: true, actions: ["kick"], landscape: true },
   "cosmic-slam": { pad: false, actions: ["swing"], landscape: true },
+  "star-courier": { pad: true, actions: [], landscape: false },
 };
 
 export default async function scenario(page) {

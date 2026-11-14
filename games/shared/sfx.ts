@@ -6,7 +6,8 @@
 
 let context: AudioContext | null = null;
 
-function audio(): AudioContext | null {
+/** The shared AudioContext (created on first use), or null if unavailable. */
+export function audio(): AudioContext | null {
   try {
     context ??= new AudioContext();
     if (context.state === "suspended") void context.resume();
@@ -145,5 +146,48 @@ export const sfx = {
   aww: () => {
     tone(420, 240, 0.6, "triangle", 0.09);
     noise(0.6, 700, 0.05, "bandpass");
+  },
+
+  // Star Courier
+  hop: () => tone(300, 620, 0.12, "triangle", 0.08),
+  /** Moon Boots hop or a bounce off a pod roof. */
+  boing: () => {
+    tone(180, 720, 0.22, "sine", 0.14);
+    tone(360, 900, 0.18, "triangle", 0.05);
+  },
+  slide: () => noise(0.22, 1600, 0.08, "bandpass"),
+  land: () => noise(0.06, 500, 0.08),
+  swish: () => noise(0.08, 2600, 0.04, "bandpass"),
+  /**
+   * Stardust pickup. `streak` counts pickups in a row: each one rings a step
+   * higher up a major scale, back to the bottom after a pause.
+   */
+  stardust: (streak: number) => {
+    const steps = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24];
+    const semis = steps[Math.min(streak, steps.length - 1)];
+    const f = 880 * 2 ** (semis / 12);
+    note(f, 0, 0.09, "square", 0.035);
+    note(f * 2, 0.03, 0.06, "triangle", 0.025);
+  },
+  powerUp: () => jingle([523, 784, 1047, 1319], 0.05, "triangle"),
+  powerDown: () => jingle([784, 587, 440], 0.06, "triangle"),
+  stumble: () => {
+    tone(260, 120, 0.25, "square", 0.07);
+    noise(0.15, 900, 0.12);
+  },
+  /** Bubble Shield pops. */
+  pop: () => {
+    noise(0.12, 3000, 0.2, "highpass");
+    tone(900, 300, 0.15, "sine", 0.1);
+  },
+  smash: () => {
+    noise(0.2, 2200, 0.2);
+    tone(700, 1400, 0.1, "square", 0.04);
+  },
+  /** Gloop the jelly gives you a squishy hug. */
+  gloop: () => {
+    tone(320, 90, 0.5, "sine", 0.22);
+    tone(240, 70, 0.6, "triangle", 0.1);
+    noise(0.4, 500, 0.08, "bandpass");
   },
 };

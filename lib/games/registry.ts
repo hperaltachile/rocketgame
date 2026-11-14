@@ -1,5 +1,6 @@
 export type GameSlug =
   | "rocket-run"
+  | "star-courier"
   | "nova-shootout"
   | "cosmic-slam"
   | "snake"
@@ -16,7 +17,7 @@ export type GameInfo = {
   /** Meta description for the game page. */
   description: string;
   icon: string;
-  engine: "phaser" | "react";
+  engine: "phaser" | "three" | "react";
   best: {
     label: string;
     /** "high": bigger is better (points). "low": smaller is better (time, moves). */
@@ -35,6 +36,17 @@ export const GAMES: readonly GameInfo[] = [
       "Pilot your rocket through an endless asteroid field. Tap or press Space to boost — how far can you fly?",
     icon: "🚀",
     engine: "phaser",
+    best: { label: "Best", direction: "high" },
+    available: true,
+  },
+  {
+    slug: "star-courier",
+    name: "Star Courier",
+    tagline: "Dash along the Ring Rail in 3D and dodge cargo pods.",
+    description:
+      "Race parcels along a space railway in 3D! Switch lanes, jump crates, slide under lasers and grab power-ups while Gloop the giant jelly tries to give you a hug.",
+    icon: "📦",
+    engine: "three",
     best: { label: "Best", direction: "high" },
     available: true,
   },

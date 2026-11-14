@@ -17,10 +17,15 @@ export function GameLoading() {
 
 /**
  * One entry per game, each a separate chunk loaded only on its own page.
- * Phaser games use `ssr: false` so Phaser never runs on the server.
+ * Phaser and Three.js games use `ssr: false` so the engine never runs on
+ * the server.
  */
 const GAME_COMPONENTS: Record<GameSlug, ComponentType> = {
   "rocket-run": dynamic(() => import("@/games/rocket-run/RocketRun"), {
+    ssr: false,
+    loading: GameLoading,
+  }),
+  "star-courier": dynamic(() => import("@/games/star-courier/StarCourier"), {
     ssr: false,
     loading: GameLoading,
   }),

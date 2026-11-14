@@ -65,8 +65,8 @@ export default function AboutPage() {
         <p className="text-muted">
           All games are original. The rocket logo, the game pictures (pixel art
           and its blocky letters too) and the sounds are made by us in code, and
-          every character (like Bolt the robot goalie) is made up. Other things
-          we use:
+          every character (like Bolt the robot goalie or Gloop the space-jelly)
+          is made up. Other things we use:
         </p>
         <ul className="list-disc space-y-1 pl-5 text-muted">
           <li>
@@ -85,6 +85,23 @@ export default function AboutPage() {
               Geist
             </a>
             , SIL Open Font License 1.1.
+          </li>
+          <li>
+            Game engines:{" "}
+            <a
+              className="underline underline-offset-4"
+              href="https://phaser.io"
+            >
+              Phaser
+            </a>{" "}
+            and{" "}
+            <a
+              className="underline underline-offset-4"
+              href="https://threejs.org"
+            >
+              three.js
+            </a>
+            , MIT License.
           </li>
         </ul>
       </section>
